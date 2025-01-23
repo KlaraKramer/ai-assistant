@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import mpld3    
 import plotly.express as px
 from plotly.tools import mpl_to_plotly
 import sys
@@ -24,6 +25,12 @@ matplotlib.use('Agg')
 
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+# Global variable to store Lux recommendations
+recommendations = {}
+
+# Global variable to store recommendation options
+rec_options = []
 
 # Set dashboard layout
 app.layout = dbc.Container([
@@ -48,6 +55,8 @@ app.layout = dbc.Container([
     # Button to trigger Lux recommendations
     html.Div([
         dbc.Button("Show Recommendations", id="show-recs", color="primary", className="mt-2"),
+        dcc.Dropdown(placeholder="Select a recommendation option", id='rec-dropdown'),
+        html.Div(id='rec-output-container'),
         html.Div(id="lux-output", className="mt-4")
     ])
 ])
@@ -87,25 +96,41 @@ def update_output(contents, filename):
 
 # Callback to display Lux recommendations
 @app.callback(
-    Output(component_id='lux-output', component_property='children'),
-    Input(component_id='show-recs', component_property='n_clicks')
+    [Output(component_id='lux-output', component_property='children'),
+    Output(component_id='rec-dropdown', component_property='options')],
+    [Input(component_id='show-recs', component_property='n_clicks'),
+    Input(component_id='rec-dropdown', component_property='value')],
+    prevent_initial_call=True
 )
-def show_recommendations(n_clicks):
+def show_recommendations(n_clicks, drop_value):
     global uploaded_df
+    global recommendations
+    global rec_options
     if n_clicks and uploaded_df is not None:
         # Generate recommendations and store the resulting dictionary explicitly
         recommendations = uploaded_df.recommendation
-        print("recommendations: ", recommendations)
-        if recommendations and "Correlation" in recommendations:
-            # Access 'Correlation' recommendation group
-            corr_recommendations = recommendations["Correlation"]
+        if rec_options == []:
+            rec_options = [{'label': key, 'value': key} for key in recommendations]  # .keys()
+        # print("recommendations: ", recommendations)
+        if recommendations:
+            # Ensure drop_value is valid; default to the first option if not
+            if drop_value not in recommendations:
+                drop_value = rec_options[0]['value']
 
-            if corr_recommendations:
+            # Access specified recommendation group
+            selected_recommendations = recommendations[drop_value]
+            print("drop_value: ", drop_value)
+            print("selected_recommendations: ", selected_recommendations)
+
+            if selected_recommendations:
                 graph_components = []
 
-                for vis in corr_recommendations:
+                for vis in selected_recommendations:
+                    
+                    # Initialise variables that will be specified in the fig_code 
+                    fig, ax = plt.subplots()
+
                     # Render the visualisation using Lux
-                    fig, ax = plt.subplots(figsize=(4.5, 4))
                     fig_code = vis.to_matplotlib()
                     exec(fig_code)
 
@@ -115,12 +140,23 @@ def show_recommendations(n_clicks):
 
                     fig.savefig("debug_figure.png")
 
+                    # Fix incompatible properties in the Matplotlib figure
+                    # Loop through axes and update any properties (like bargap) that may have invalid types
+                    for ax in fig.axes:
+                        for artist in ax.get_children():
+                            artist.bargap = 0.8
+
                     # Convert the Matplotlib figure to Plotly
                     plotly_fig = mpl_to_plotly(fig)
+
                     # Append the figure as a Dash Graph component
                     graph_components.append(
                         dcc.Graph(figure=plotly_fig, style={'flex': '1 0 30%', 'margin': '5px'})
                     )
+
+
+                    # # Convert the Matplotlib figure to HTML
+                    # html_matplotlib = mpld3.fig_to_html(fig)
 
                 # Return all Graph components inside a flexbox container
                 return html.Div(
@@ -131,8 +167,18 @@ def show_recommendations(n_clicks):
                         'justifyContent': 'space-around',
                         'margin': '5px'
                     }
-                )
-    return html.Div("No recommendations available. Upload data first.")
+                ), rec_options
+    return html.Div("No recommendations available. Upload data first."), []
+
+# Callback to choose which recommendations to display
+@app.callback(
+    Output(component_id='rec-output-container', component_property='children'),
+    Input(component_id='rec-dropdown', component_property='value')
+)
+def update_rec_option(value):
+    if value is None:
+        return ""
+    return f'Showing {value} recommendations'
 
 # Run the Dash app
 if __name__ == '__main__':
