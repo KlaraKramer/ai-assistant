@@ -115,11 +115,23 @@ def show_recommendations(n_clicks):
 
                     fig.savefig("debug_figure.png")
 
-                    # Convert the Matplotlib figure to Plotly, and then to a Graph component
-                    graph_components.append(dcc.Graph(figure=mpl_to_plotly(fig)))
+                    # Convert the Matplotlib figure to Plotly
+                    plotly_fig = mpl_to_plotly(fig)
+                    # Append the figure as a Dash Graph component
+                    graph_components.append(
+                        dcc.Graph(figure=plotly_fig, style={'flex': '1 0 30%', 'margin': '5px'})
+                    )
 
-                # Return all Graph components wrapped in an HTML Div
-                return html.Div(children=graph_components)
+                # Return all Graph components inside a flexbox container
+                return html.Div(
+                    children=graph_components,
+                    style={
+                        'display': 'flex',
+                        'flexWrap': 'wrap',
+                        'justifyContent': 'space-around',
+                        'margin': '5px'
+                    }
+                )
     return html.Div("No recommendations available. Upload data first.")
 
 # Run the Dash app
