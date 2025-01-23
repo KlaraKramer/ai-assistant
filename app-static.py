@@ -6,7 +6,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import plotly.express as px
 from plotly.tools import mpl_to_plotly
-# import plotly.graph_objects as go
 import sys
 import os
 import base64
@@ -43,7 +42,7 @@ app.layout = dbc.Container([
         },
     ),
 
-    # Placeholder for uploaded data and visualizations
+    # Placeholder for uploaded data and visualisations
     html.Div(id='output-data-upload', className="my-4"),
 
     # Button to trigger Lux recommendations
@@ -79,8 +78,6 @@ def update_output(contents, filename):
         if uploaded_df is not None:
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
-            # Set Lux as default display
-            uploaded_df.default_display = "lux"
             return html.Div([
                 html.H5(f"Uploaded File: {filename}"),
                 dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
@@ -123,33 +120,6 @@ def show_recommendations(n_clicks):
                 # Render the Plotly figure in Dash
                 return dcc.Graph(figure=plotly_fig)
     return html.Div("No recommendations available. Upload data first.")
-# def show_recommendations(n_clicks):
-#     global uploaded_df
-#     if n_clicks and uploaded_df is not None:
-#         # Generate recommendations
-#         recommendations = uploaded_df.recommendation
-#         print("recommendations: ", recommendations)
-#         if recommendations and len(recommendations) > 0:
-#             # Access 'Correlation' from the recommendations dictionary
-#             corr = recommendations['Correlation']
-#             # Access the first visualization
-#             vis = corr[0]  # Example: first recommendation
-#             fig = vis.to_matplotlib()  # Convert visualization to Matplotlib figure
-            
-#             # # Save the plot to a BytesIO object
-#             # buffer = BytesIO()
-#             # plt.savefig(buffer, format="png")
-#             # buffer.seek(0)
-#             # encoded_image = base64.b64encode(buffer.read()).decode('ascii')
-#             # buffer.close()
-            
-#             # return html.Img(src=f"data:image/png;base64,{encoded_image}")
-
-#             plotly_fig = mpl_to_plotly(fig)  # Convert visualization to Plotly figure
-
-#             # Render the Plotly figure in Dash
-#             return dcc.Graph(figure=plotly_fig)
-#     return html.Div("No recommendations available. Upload data first.")
 
 # Run the Dash app
 if __name__ == '__main__':
