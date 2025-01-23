@@ -93,7 +93,7 @@ def update_output(contents, filename):
 def show_recommendations(n_clicks):
     global uploaded_df
     if n_clicks and uploaded_df is not None:
-        # Generate recommendations
+        # Generate recommendations and store the resulting dictionary explicitly
         recommendations = uploaded_df.recommendation
         print("recommendations: ", recommendations)
         if recommendations and "Correlation" in recommendations:
@@ -101,24 +101,25 @@ def show_recommendations(n_clicks):
             corr_recommendations = recommendations["Correlation"]
 
             if corr_recommendations:
-                vis = corr_recommendations[0]  # Example: first visualization
+                graph_components = []
 
-                # Render the visualisation
-                fig, ax = plt.subplots(figsize=(4.5, 4))
-                fig_code = vis.to_matplotlib()
-                exec(fig_code)
+                for vis in corr_recommendations:
+                    # Render the visualisation using Lux
+                    fig, ax = plt.subplots(figsize=(4.5, 4))
+                    fig_code = vis.to_matplotlib()
+                    exec(fig_code)
 
-                # Capture the current Matplotlib figure
-                fig = plt.gcf()
-                plt.draw()
+                    # Capture the current Matplotlib figure
+                    fig = plt.gcf()
+                    plt.draw()
 
-                fig.savefig("debug_figure.png")
+                    fig.savefig("debug_figure.png")
 
-                # Convert the Matplotlib figure to Plotly
-                plotly_fig = mpl_to_plotly(fig)
+                    # Convert the Matplotlib figure to Plotly, and then to a Graph component
+                    graph_components.append(dcc.Graph(figure=mpl_to_plotly(fig)))
 
-                # Render the Plotly figure in Dash
-                return dcc.Graph(figure=plotly_fig)
+                # Return all Graph components wrapped in an HTML Div
+                return html.Div(children=graph_components)
     return html.Div("No recommendations available. Upload data first.")
 
 # Run the Dash app
