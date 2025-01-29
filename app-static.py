@@ -20,9 +20,6 @@ import re
 sys.path.insert(0, os.path.abspath("./lux"))
 import lux
 
-# Disable widget attachment
-# lux.config.default_display = "none"  
-
 # Use non-interactive backend
 matplotlib.use('Agg')  
 
@@ -55,11 +52,16 @@ app.layout = dbc.Container([
     # Placeholder for uploaded data and visualisations
     html.Div(id='output-data-upload', className="my-4"),
 
-    # Button to trigger Lux recommendations
     html.Div([
+        # Button to trigger Lux recommendations
         dbc.Button("Show Recommendations", id="show-recs", color="primary", className="mt-2"),
-        dcc.Dropdown(placeholder="Select a recommendation option", id='rec-dropdown'),
-        html.Div(id='rec-output-container'),
+        # Dropdown to choose recommendation option (initially hidden)
+        dcc.Dropdown(
+            placeholder="Select a recommendation option", 
+            id='rec-dropdown',
+            style={'display': 'none'}  # Initially hidden
+        ),
+        html.Div(id='rec-output-container', style={'display': 'none'}),
         html.Div(id="lux-output", className="mt-4")
     ])
 ])
@@ -173,21 +175,31 @@ def update_output(contents, filename):
 # Callback to display Lux recommendations
 @app.callback(
     [Output(component_id='lux-output', component_property='children'),
-    Output(component_id='rec-dropdown', component_property='options')],
+     Output(component_id='rec-dropdown', component_property='style'),
+     Output(component_id='rec-output-container', component_property='style'),
+     Output(component_id='rec-dropdown', component_property='options')],
     [Input(component_id='show-recs', component_property='n_clicks'),
-    Input(component_id='rec-dropdown', component_property='value')],
+     Input(component_id='rec-dropdown', component_property='value')],
+    [State(component_id='upload-data', component_property='filename')],
+    #  State(component_id='upload-data', component_property='contents')],
     prevent_initial_call=True
 )
-def show_recommendations(n_clicks, drop_value):
+def show_recommendations(n_clicks, drop_value, filename):
     global uploaded_df
     global recommendations
     global rec_options
+    if n_clicks:
+        # Make the dropdown visible when the button is clicked
+        dropdown_style = {'display': 'block'}
+    else:
+        # Keep the dropdown hidden by default
+        dropdown_style = {'display': 'none'}
+
     if n_clicks and uploaded_df is not None:
         # Generate recommendations and store the resulting dictionary explicitly
         recommendations = uploaded_df.recommendation
         if rec_options == []:
-            rec_options = [{'label': key, 'value': key} for key in recommendations]  # .keys()
-        # print("recommendations: ", recommendations)
+            rec_options = [{'label': key, 'value': key} for key in recommendations]
         if recommendations:
             # Ensure drop_value is valid; default to the first option if not
             if drop_value not in recommendations:
@@ -195,8 +207,6 @@ def show_recommendations(n_clicks, drop_value):
 
             # Access specified recommendation group
             selected_recommendations = recommendations[drop_value]
-            print("drop_value: ", drop_value)
-            print("selected_recommendations: ", selected_recommendations)
 
             if selected_recommendations:
                 graph_components = []
@@ -252,8 +262,8 @@ def show_recommendations(n_clicks, drop_value):
                         'justifyContent': 'space-around',
                         'margin': '5px'
                     }
-                ), rec_options
-    return html.Div("No recommendations available. Upload data first."), []
+                ), dropdown_style, dropdown_style, rec_options
+    return html.Div("No recommendations available. Upload data first."), dropdown_style, dropdown_style, []
 
 # Callback to choose which recommendations to display
 @app.callback(
@@ -262,7 +272,7 @@ def show_recommendations(n_clicks, drop_value):
 )
 def update_rec_option(value):
     if value is None:
-        return ""
+        value = ""
     return f'Showing {value} recommendations'
 
 # Run the Dash app
