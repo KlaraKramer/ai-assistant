@@ -151,43 +151,49 @@ def fix_lux_code(lux_code):
     
     return fixed_code
 
-# Callback to handle file upload
+# Callback to handle both the file upload and button click
 @app.callback(
-    Output(component_id='output-data-upload', component_property='children'),
-    Input(component_id='upload-data', component_property='contents'),
-    State(component_id='upload-data', component_property='filename')
+    [Output(component_id='output-data-upload', component_property='children'),
+     Output(component_id='rec-dropdown', component_property='style'),
+     Output(component_id='rec-output-container', component_property='style'),
+     Output(component_id='lux-output', component_property='children'),
+     Output(component_id='rec-dropdown', component_property='options')],
+    [Input(component_id='upload-data', component_property='contents'),
+     Input(component_id='show-recs', component_property='n_clicks'),
+     Input(component_id='rec-dropdown', component_property='value')],
+    [State(component_id='upload-data', component_property='filename')],
+    prevent_initial_call=True
 )
-def update_output(contents, filename):
+def update_ui(contents, n_clicks, drop_value, filename):
+    # If no data has been uploaded yet
+    if contents is None:
+        return html.Div("Unsupported file type."), {'display': 'none'}, {'display': 'none'}, html.Div("No recommendations available. Upload data first."), []
+
+    # Handle file upload (uploading data)
     global uploaded_df
-    if contents is not None:
+    global recommendations
+    global rec_options
+    if contents:
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
         if uploaded_df is not None:
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
-            return html.Div([
-                html.H5(f"Uploaded File: {filename}"),
-                dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
-            ])
-        return html.Div("Unsupported file type.")
-    return html.Div("No file uploaded.")
+            # Generate recommendations and store the resulting dictionary explicitly
+            recommendations = uploaded_df.recommendation
+            rec_options = [{'label': key, 'value': key} for key in recommendations]
+            # Return the output for file upload
+            return_file_upload = (
+                html.Div([
+                    html.H5(f"Uploaded File: {filename}"),
+                    dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
+                ]),
+                {'display': 'none'},  # Hide dropdown
+                {'display': 'none'},  # Hide recommendations container initially
+                [],
+                rec_options
+            )
 
-# Callback to display Lux recommendations
-@app.callback(
-    [Output(component_id='lux-output', component_property='children'),
-     Output(component_id='rec-dropdown', component_property='style'),
-     Output(component_id='rec-output-container', component_property='style'),
-     Output(component_id='rec-dropdown', component_property='options')],
-    [Input(component_id='show-recs', component_property='n_clicks'),
-     Input(component_id='rec-dropdown', component_property='value')],
-    [State(component_id='upload-data', component_property='filename')],
-    #  State(component_id='upload-data', component_property='contents')],
-    prevent_initial_call=True
-)
-def show_recommendations(n_clicks, drop_value, filename):
-    global uploaded_df
-    global recommendations
-    global rec_options
     if n_clicks:
         # Make the dropdown visible when the button is clicked
         dropdown_style = {'display': 'block'}
@@ -195,11 +201,8 @@ def show_recommendations(n_clicks, drop_value, filename):
         # Keep the dropdown hidden by default
         dropdown_style = {'display': 'none'}
 
+    # Handle recommendation displaying
     if n_clicks and uploaded_df is not None:
-        # Generate recommendations and store the resulting dictionary explicitly
-        recommendations = uploaded_df.recommendation
-        if rec_options == []:
-            rec_options = [{'label': key, 'value': key} for key in recommendations]
         if recommendations:
             # Ensure drop_value is valid; default to the first option if not
             if drop_value not in recommendations:
@@ -254,16 +257,27 @@ def show_recommendations(n_clicks, drop_value, filename):
                         )
 
                 # Return all Graph components inside a flexbox container
-                return html.Div(
-                    children=graph_components,
-                    style={
-                        'display': 'flex',
-                        'flexWrap': 'wrap',
-                        'justifyContent': 'space-around',
-                        'margin': '5px'
-                    }
-                ), dropdown_style, dropdown_style, rec_options
-    return html.Div("No recommendations available. Upload data first."), dropdown_style, dropdown_style, []
+                # Return the output for recommendations
+                return (
+                    html.Div([
+                        html.H5(f"Uploaded File: {filename}"),
+                        dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
+                    ]),
+                    {'display': 'block'},  # Show dropdown
+                    {'display': 'block'},  # Show recommendations container
+                    html.Div(
+                        children=graph_components,
+                        style={
+                            'display': 'flex',
+                            'flexWrap': 'wrap',
+                            'justifyContent': 'space-around',
+                            'margin': '5px'
+                        }
+                    ),
+                    rec_options
+                )
+    else:
+        return return_file_upload      
 
 # Callback to choose which recommendations to display
 @app.callback(
