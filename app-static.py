@@ -80,6 +80,45 @@ def parse_contents(contents, filename):
         return df
     return None
 
+def create_styled_matplotlib_figure(fig):
+    """Apply Plotly-like styling to an existing Matplotlib figure."""
+    
+    # Set the figure background to white (to match Plotly)
+    fig.patch.set_facecolor("white")
+
+    # Get the main axis
+    ax = fig.axes[0] if fig.axes else fig.add_subplot(111)  # Ensure there is an axis
+    ax.set_facecolor("#E5ECF6")  # Light blue background only for the plotting area
+
+    # Update bar colours if applicable
+    for patch in ax.patches:
+        patch.set_facecolor("#4C59C2")
+
+        # Make bars slimmer
+        if isinstance(patch, plt.Rectangle):  # Ensure it's a bar
+            if patch.get_width() > patch.get_height():  # Horizontal bars
+                patch.set_height(patch.get_height() * 0.3)  # Reduce thickness
+            else:  # Vertical bars
+                patch.set_width(patch.get_width() * 0.3)
+
+    # Style the labels
+    ax.set_xlabel(ax.get_xlabel(), fontsize=10, labelpad=12, 
+                  bbox=dict(facecolor="white", edgecolor="none"))
+    ax.set_ylabel(ax.get_ylabel(), fontsize=10, labelpad=12, 
+                  bbox=dict(facecolor="white", edgecolor="none"))
+
+    # Style the tick labels
+    ax.tick_params(axis='both', labelsize=7)
+
+    # Remove unnecessary spines (top & right)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color("#AAB8C2")  # Light gray for a cleaner look
+    ax.spines["left"].set_color("#AAB8C2")
+
+    return fig
+
+
 def fig_to_base64(fig):
     """Convert a Matplotlib figure to a base64-encoded PNG."""
     buf = io.BytesIO()
@@ -175,8 +214,11 @@ def show_recommendations(n_clicks, drop_value):
                         # If an error occurs, display the static Matplotlib image instead
                         print("Falling back to displaying a static image.")
 
+                        # Create the styled Matplotlib figure
+                        fallback_fig = create_styled_matplotlib_figure(fig)
+
                         # Convert Matplotlib figure to base64 image
-                        img_src = fig_to_base64(fig)
+                        img_src = fig_to_base64(fallback_fig)
 
                         # Append the image as an Img component
                         graph_components.append(
