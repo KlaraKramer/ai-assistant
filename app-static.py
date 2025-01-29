@@ -12,6 +12,8 @@ import os
 import base64
 import io
 from io import BytesIO
+import IPython.display as display
+from PIL import Image
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath("./lux"))
@@ -78,6 +80,15 @@ def parse_contents(contents, filename):
         return df
     return None
 
+def fig_to_base64(fig):
+    """Convert a Matplotlib figure to a base64-encoded PNG."""
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    encoded_img = base64.b64encode(buf.read()).decode("utf-8")
+    buf.close()
+    return f"data:image/png;base64,{encoded_img}"
+
 # Callback to handle file upload
 @app.callback(
     Output(component_id='output-data-upload', component_property='children'),
@@ -139,29 +150,38 @@ def show_recommendations(n_clicks, drop_value):
                     fig_code = vis.to_matplotlib()
                     exec(fig_code)
 
+                    # fig.set_size_inches(10, 6)
+
                     # Capture the current Matplotlib figure
                     fig = plt.gcf()
                     plt.draw()
 
                     # fig.savefig("debug_figure.png")
 
-                    # Fix incompatible properties in the Matplotlib figure
-                    # Loop through axes and update any properties (like bargap) that may have invalid types
-                    for ax in fig.axes:
-                        for artist in ax.get_children():
-                            artist.bargap = 0.8
+                    # Try to convert Matplotlib figure to Plotly
+                    try:
+                        plotly_fig = mpl_to_plotly(fig)
 
-                    # Convert the Matplotlib figure to Plotly
-                    plotly_fig = mpl_to_plotly(fig)
+                        # plotly_fig.update_layout(width=1000, height=600)
 
-                    # Append the figure as a Dash Graph component
-                    graph_components.append(
-                        dcc.Graph(figure=plotly_fig, style={'flex': '1 0 30%', 'margin': '5px'})
-                    )
+                        # Append the figure as a Dash Graph component
+                        graph_components.append(
+                            dcc.Graph(figure=plotly_fig, style={'flex': '1 0 30%', 'margin': '5px'})
+                        )
+                    except ValueError as e:
+                        error_message = str(e)
+                        print(f"Error during mpl_to_plotly conversion: {error_message}")
 
+                        # If an error occurs, display the static Matplotlib image instead
+                        print("Falling back to displaying a static image.")
 
-                    # # Convert the Matplotlib figure to HTML
-                    # html_matplotlib = mpld3.fig_to_html(fig)
+                        # Convert Matplotlib figure to base64 image
+                        img_src = fig_to_base64(fig)
+
+                        # Append the image as an Img component
+                        graph_components.append(
+                            html.Img(src=img_src, style={'flex': '1 0 30%', 'margin': '5px'})
+                        )
 
                 # Return all Graph components inside a flexbox container
                 return html.Div(
