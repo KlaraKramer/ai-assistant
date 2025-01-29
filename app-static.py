@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath("./lux"))
 import lux
 
 # Disable widget attachment
-lux.config.default_display = "none"  
+# lux.config.default_display = "none"  
 
 # Use non-interactive backend
 matplotlib.use('Agg')  
@@ -70,7 +70,12 @@ def parse_contents(contents, filename):
 
     decoded = base64.b64decode(content_string)
     if filename.endswith('.csv'):
-        return pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        # Convert all column names to lowercase and replace spaces with underscores
+        df.rename(columns=lambda x: x.lower().replace(" ", "_").replace("-", "_"), inplace=True)
+        # Remove all special characters from column names
+        df.rename(columns=lambda x: x.lower().replace(":", "").replace("$", "").replace("(", "").replace(")", ""), inplace=True)
+        return df
     return None
 
 # Callback to handle file upload
@@ -138,7 +143,7 @@ def show_recommendations(n_clicks, drop_value):
                     fig = plt.gcf()
                     plt.draw()
 
-                    fig.savefig("debug_figure.png")
+                    # fig.savefig("debug_figure.png")
 
                     # Fix incompatible properties in the Matplotlib figure
                     # Loop through axes and update any properties (like bargap) that may have invalid types
