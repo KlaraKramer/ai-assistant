@@ -14,6 +14,7 @@ import io
 from io import BytesIO
 import IPython.display as display
 from PIL import Image
+import re
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath("./lux"))
@@ -128,6 +129,26 @@ def fig_to_base64(fig):
     buf.close()
     return f"data:image/png;base64,{encoded_img}"
 
+def fix_lux_code(lux_code):
+    """
+    This function takes the Lux-generated code as input, identifies
+    and fixes any syntax issues related to the `ax.barh()` function.
+    Specifically, it replaces the incorrectly formatted bar data with
+    proper `.values` access to the Pandas Series.
+    """
+    
+    # Pattern to identify the `ax.barh()` function call
+    # barh_pattern = r"(ax\.barh\().*?(dtype: object,.*?dtype: int64.*?)\)"
+    pattern = r"(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)"
+    
+    # Replacement that ensures bars and measurements are properly formatted
+    replacement = r"ax.barh(bars.values, measurements.values, align='center')"
+
+    # Apply the substitution to the code to fix the barh() call
+    fixed_code = re.sub(pattern, replacement, lux_code, flags=re.DOTALL)
+    
+    return fixed_code
+
 # Callback to handle file upload
 @app.callback(
     Output(component_id='output-data-upload', component_property='children'),
@@ -187,15 +208,12 @@ def show_recommendations(n_clicks, drop_value):
 
                     # Render the visualisation using Lux
                     fig_code = vis.to_matplotlib()
-                    exec(fig_code)
-
-                    # fig.set_size_inches(10, 6)
+                    fixed_fig_code = fix_lux_code(fig_code)
+                    exec(fixed_fig_code)
 
                     # Capture the current Matplotlib figure
                     fig = plt.gcf()
                     plt.draw()
-
-                    # fig.savefig("debug_figure.png")
 
                     # Try to convert Matplotlib figure to Plotly
                     try:
