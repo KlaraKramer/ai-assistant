@@ -5,6 +5,8 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.cm import Set1
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import altair as alt
 import mpld3    
 from plotly.tools import mpl_to_plotly
 import sys
@@ -23,9 +25,6 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# # Global variable to store Lux recommendations
-# recommendations = {}
-
 # Global variable to store recommendation options
 rec_options = []
 
@@ -35,8 +34,14 @@ figure_clicks = []
 # Global variable to store the uploaded DataFrame
 uploaded_df = None
 
+# Global variable to store selected figure id
+selected_id = None
+
 # Global variable to store selected columns from clicking on a figure
 selected_columns = ()
+
+# Global variable to store Lux Vis objects and the indices corresponding to the figures they are displayed in
+vis_objects = {}
 
 # Set dashboard layout
 app.layout = dbc.Container([
@@ -101,8 +106,8 @@ app.layout = dbc.Container([
 )
 def update_ui(contents, n_clicks, drop_value, filename):
     global uploaded_df
-    # global recommendations
     global rec_options
+    global vis_objects
 
     # If no data has been uploaded yet
     if contents is None:
@@ -146,6 +151,9 @@ def update_ui(contents, n_clicks, drop_value, filename):
 
                 for i, vis in enumerate(selected_recommendations):
 
+                    # Populate vis_objects dictionary for referring back to the visualisations
+                    vis_objects[i] = vis
+
                     # Get the relevant column names
                     selected_cols = extract_vis_columns(vis)
                     
@@ -178,6 +186,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                     )
                                 ],
                                 id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns in ID
+                                # id={'type': 'graph-container', 'index': i, 'columns': str(vis)},
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
@@ -204,6 +213,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                     )
                                 ],
                                 id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns ID
+                                # id={'type': 'graph-container', 'index': i, 'columns': str(vis)},
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
@@ -253,6 +263,7 @@ def update_rec_option(value):
 def handle_graph_click(n_clicks_list, component_ids):
     global figure_clicks
     global selected_columns
+    global selected_id
     # Find which graph was clicked by finding the difference between the global figure_clicks list and the new n_clicks_list
     if len(figure_clicks) == len(n_clicks_list):
         arr1 = np.array(figure_clicks)
@@ -261,6 +272,7 @@ def handle_graph_click(n_clicks_list, component_ids):
 
         # Extract the selected columns, and display them to the console and the dashboard user
         selected_columns = component_ids[clicked_index]['columns']
+        selected_id = component_ids[clicked_index]['index']
         print("Selected Columns:", selected_columns)
         # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
         figure_clicks = n_clicks_list
@@ -278,16 +290,19 @@ def handle_graph_click(n_clicks_list, component_ids):
 def handle_enhance_click(n_clicks):
     global selected_columns
     global uploaded_df
+    global vis_objects
+    global selected_id
 
     if n_clicks and uploaded_df is not None:
-        # Extract the selected columns from the stored selected_columns string
-        selected_cols_clean = selected_columns.replace('(', '').replace(')', '').replace("'", "").replace(',', '')
-        selected_column_tuple = tuple(selected_cols_clean.split())
-        # Specify intent based on the selected columns
-        uploaded_df.intent = [selected_column_tuple[0], selected_column_tuple[1]]
+        # # Extract the selected columns from the stored selected_columns string
+        # selected_cols_clean = selected_columns.replace('(', '').replace(')', '').replace("'", "").replace(',', '')
+        # selected_column_tuple = tuple(selected_cols_clean.split())
+        # # Specify intent based on the selected columns
+        # uploaded_df.intent = [selected_column_tuple[0], selected_column_tuple[1]]
+        vis = vis_objects[selected_id]
+        uploaded_df.intent = vis
         # Generate new recommendations and store the resulting dictionary
         recommendations = uploaded_df.recommendation
-        print(recommendations)
         graph_components = []
         if recommendations:
             for selected_recommendations in recommendations.values():
@@ -298,24 +313,23 @@ def handle_enhance_click(n_clicks):
                     
                     # Initialise variables that will be specified in the fig_code 
                     fig, ax = plt.subplots()
+                    tab20c = plt.get_cmap('tab20c')
 
                     # Render the visualisation using Lux
                     try:
                         fig_code = vis.to_matplotlib()
-                    except ValueError as e:
-                        print(f"Error in vis.to_matplotlib(): {e}. Handling manually.")
-                        # # Manually create the scatter plot if vis.to_matplotlib() fails
-                        # scatter = ax.scatter(x_pts, y_pts, c=colors, cmap=Set1, alpha=0.5)
-
-                        # # Add a colorbar manually
-                        # cbar = plt.colorbar(scatter, ax=ax)
-                        # cbar.set_label('Previous Accidents')
+                    except ValueError:
+                        print("Error in to_matplotlib()")
+                        fig_code = ""
+                    # fig_code = vis.to_altair()
                     fixed_fig_code = fix_lux_code(fig_code)
                     exec(fixed_fig_code)
 
                     # Capture the current Matplotlib figure
                     fig = plt.gcf()
                     plt.draw()
+
+                    ax.legend(loc="upper right", bbox_to_anchor=(1, 1))
 
                     # Try to convert Matplotlib figure to Plotly
                     try:

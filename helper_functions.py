@@ -1,5 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
+import os
 import re
 import base64
 import io
@@ -7,6 +9,11 @@ from io import BytesIO
 import IPython.display as display
 from PIL import Image
 import plotly.express as px
+
+# Add locally cloned Lux source code to path, and import Lux from there
+sys.path.insert(0, os.path.abspath("./lux"))
+import lux
+from lux.vis.Vis import Vis
 
 # Function to parse uploaded data
 def parse_contents(contents, filename):
@@ -97,3 +104,31 @@ def extract_vis_columns(visualisation):
         extracted_columns = (x_col.strip(), y_col.strip())
 
     return extracted_columns
+
+def parse_vis_string(vis_str):
+    # Extract x and y axis
+    x_match = re.search(r"x:\s*([\w_]+)", vis_str)
+    y_match = re.search(r"y:\s*([\w_]+)", vis_str)
+    mark_match = re.search(r"mark:\s*([\w_]+)", vis_str)
+    score_match = re.search(r"score:\s*([\d.]+)", vis_str)
+
+    if not x_match or not y_match:
+        raise ValueError("Invalid Vis string format")
+
+    x_attr = x_match.group(1)
+    y_attr = y_match.group(1)
+    mark = mark_match.group(1) if mark_match else None
+    score = float(score_match.group(1)) if score_match else None
+
+    # Create Vis object (without 'mark' argument)
+    vis = Vis([{"x": x_attr}, {"y": y_attr}])
+
+    # Set mark if available
+    if mark:
+        vis.mark = mark
+
+    # Assign score if available
+    if score is not None:
+        vis.score = score
+
+    return vis
