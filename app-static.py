@@ -25,7 +25,7 @@ import lux
 matplotlib.use('Agg')  
 
 # Initialize Dash app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 # Global variable to store Lux recommendations
 recommendations = {}
@@ -38,6 +38,9 @@ figure_clicks = []
 
 # Global variable to store the uploaded DataFrame
 uploaded_df = None
+
+# Global variable to store selected columns from clicking on a figure
+selected_columns = ()
 
 # Set dashboard layout
 app.layout = dbc.Container([
@@ -61,16 +64,29 @@ app.layout = dbc.Container([
 
     html.Div([
         # Button to trigger Lux recommendations
-        dbc.Button("Show Recommendations", id="show-recs", color="primary", className="mt-2"),
+        dbc.Button(
+            "Show Recommendations", 
+            id="show-recs", 
+            color="primary", 
+            className="mt-2"
+        ),
         # Dropdown to choose recommendation option (initially hidden)
         dcc.Dropdown(
             placeholder="Select a recommendation option", 
             id='rec-dropdown',
             style={'display': 'none'}  # Initially hidden
         ),
-        html.Div(id='vis-selection-output', style={'display': 'none'}),
         html.Div(id='rec-output-container', style={'display': 'none'}),
-        html.Div(id="lux-output", className="mt-4")
+        html.Div(id='lux-output', className='mt-4'),
+        html.Div(id='vis-selection-output', style={'display': 'none'}),
+        # html.Div(id='enhance-button-container'),
+        dbc.Button(
+            "Enhance",
+            id='enhance-button',
+            className="btn btn-success",
+            style={'display': 'none', 'margin-left': '10px'}
+        ),
+        html.Div(id='enhanced-output', className='mt-4')
     ])
 ])
 
@@ -225,7 +241,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
                 for i, vis in enumerate(selected_recommendations):
 
                     # Get the relevant column names
-                    selected_columns = extract_vis_columns(vis)
+                    selected_cols = extract_vis_columns(vis)
                     
                     # Initialise variables that will be specified in the fig_code 
                     fig, ax = plt.subplots()
@@ -255,7 +271,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                         style={'flex': '1 0 30%', 'margin': '5px'}
                                     )
                                 ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in ID
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns in ID
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
@@ -281,7 +297,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                         style={'flex': '1 0 27%', 'margin': '5px'}
                                     )
                                 ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns ID
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns ID
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
@@ -322,29 +338,116 @@ def update_rec_option(value):
 # Callback to handle graph clicks
 @app.callback(
     [Output(component_id='vis-selection-output', component_property='children'),
-     Output(component_id='vis-selection-output', component_property='style')],
+     Output(component_id='vis-selection-output', component_property='style'),
+     Output(component_id='enhance-button', component_property='style')],
     [Input(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='n_clicks')],
     [State(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='id')],
     prevent_initial_call=True
 )
 def handle_graph_click(n_clicks_list, component_ids):
     global figure_clicks
+    global selected_columns
     # Find which graph was clicked by finding the difference between the global figure_clicks list and the new n_clicks_list
     if len(figure_clicks) == len(n_clicks_list):
         arr1 = np.array(figure_clicks)
         arr2 = np.array(n_clicks_list)
-        clicked_index = np.where(arr1 != arr2)[0][-1]
+        clicked_index = int(np.where(arr1 != arr2)[0][-1])
 
         # Extract the selected columns, and display them to the console and the dashboard user
         selected_columns = component_ids[clicked_index]['columns']
         print("Selected Columns:", selected_columns)
         # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
         figure_clicks = n_clicks_list
-        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}        
+        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}, {'display': 'block'}     
 
     # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
     figure_clicks = n_clicks_list
-    return dash.no_update, {'display': 'none'}
+    return dash.no_update, {'display': 'none'}, dash.no_update
+
+# Callback to handle 'Enhance' button clicks
+@app.callback(
+    Output(component_id='enhanced-output', component_property='children'),
+    Input(component_id='enhance-button', component_property='n_clicks')
+)
+def handle_enhance_click(n_clicks):
+    global selected_columns
+    global uploaded_df
+
+    if n_clicks and uploaded_df is not None:
+        # Specify intent based on the selected columns
+        uploaded_df.intent = [selected_columns[0], selected_columns[1]]
+        # Generate new recommendations and store the resulting dictionary
+        recommendations = uploaded_df.recommendation
+        graph_components = []
+        if recommendations:
+            for selected_recommendations in recommendations.values():
+                for i, vis in enumerate(selected_recommendations):
+
+                    # # Get the relevant column names
+                    # selected_cols = extract_vis_columns(vis)
+                    
+                    # Initialise variables that will be specified in the fig_code 
+                    fig, ax = plt.subplots()
+
+                    # Render the visualisation using Lux
+                    fig_code = vis.to_matplotlib()
+                    fixed_fig_code = fix_lux_code(fig_code)
+                    exec(fixed_fig_code)
+
+                    # Capture the current Matplotlib figure
+                    fig = plt.gcf()
+                    plt.draw()
+
+                    # Try to convert Matplotlib figure to Plotly
+                    try:
+                        plotly_fig = mpl_to_plotly(fig)
+
+                        # plotly_fig.update_layout(width=1000, height=600)
+
+                        # Append the graph as a Dash Graph component
+                        graph_components.append(
+                            dcc.Graph(
+                                id={'type': 'dynamic-graph', 'index': i},
+                                figure=plotly_fig,
+                                style={'flex': '1 0 30%', 'margin': '5px'}
+                            )
+                        )
+                    except ValueError as e:
+                        # error_message = str(e)
+                        # If an error occurs, display the static Matplotlib image instead
+                        print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
+
+                        # Create the styled Matplotlib figure
+                        fallback_fig = create_styled_matplotlib_figure(fig)
+
+                        # Convert Matplotlib figure to base64 image
+                        img_src = fig_to_base64(fallback_fig)
+
+                        # Append the image as an Img component
+                        graph_components.append(
+                            html.Img(
+                                id={'type': 'image', 'index': i}, 
+                                src=img_src,
+                                style={'flex': '1 0 27%', 'margin': '5px'}
+                            )
+                        )
+
+                # Return all Graph components inside a flexbox container
+                return (
+                    html.Div(
+                        children=graph_components,
+                        style={
+                            'display': 'flex',
+                            'flexWrap': 'wrap',
+                            'justifyContent': 'space-around',
+                            'margin': '5px'
+                        }
+                    )
+                )
+    else:
+        return dash.no_update
+
+
 
 # Run the Dash app
 if __name__ == '__main__':
