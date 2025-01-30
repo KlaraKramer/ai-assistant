@@ -1,0 +1,99 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+import base64
+import io
+from io import BytesIO
+import IPython.display as display
+from PIL import Image
+import plotly.express as px
+
+# Function to parse uploaded data
+def parse_contents(contents, filename):
+
+    content_type, content_string = contents.split(',')
+
+    decoded = base64.b64decode(content_string)
+    if filename.endswith('.csv'):
+        df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        # Convert all column names to lowercase and replace spaces with underscores
+        df.rename(columns=lambda x: x.lower().replace(" ", "_").replace("-", "_"), inplace=True)
+        # Remove all special characters from column names
+        df.rename(columns=lambda x: x.lower().replace(":", "").replace("$", "").replace("(", "").replace(")", ""), inplace=True)
+
+        return df
+
+    return None
+
+def create_styled_matplotlib_figure(fig):
+    # Apply Plotly-like styling to an existing Matplotlib figure
+    
+    # Set the figure background to white (to match Plotly)
+    fig.patch.set_facecolor("white")
+
+    # Get the main axis
+    ax = fig.axes[0] if fig.axes else fig.add_subplot(111)  # Ensure there is an axis
+    ax.set_facecolor("#E5ECF6")  # Light blue background only for the plotting area
+
+    # Update bar colours if applicable
+    for patch in ax.patches:
+        patch.set_facecolor("#4C59C2")
+
+        # Make bars slimmer
+        if isinstance(patch, plt.Rectangle):  # Ensure it's a bar
+            if patch.get_width() > patch.get_height():  # Horizontal bars
+                patch.set_height(patch.get_height() * 0.3)  # Reduce thickness
+            else:  # Vertical bars
+                patch.set_width(patch.get_width() * 0.3)
+
+    # Style the labels
+    ax.set_xlabel(ax.get_xlabel(), fontsize=10, labelpad=12, 
+                  bbox=dict(facecolor="white", edgecolor="none"))
+    ax.set_ylabel(ax.get_ylabel(), fontsize=10, labelpad=12, 
+                  bbox=dict(facecolor="white", edgecolor="none"))
+
+    # Style the tick labels
+    ax.tick_params(axis='both', labelsize=7)
+
+    # Remove unnecessary spines (top & right)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color("#AAB8C2")  # Light gray for a cleaner look
+    ax.spines["left"].set_color("#AAB8C2")
+
+    return fig
+
+
+def fig_to_base64(fig):
+
+    # Convert a Matplotlib figure to a base64-encoded PNG
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight")
+    buf.seek(0)
+    encoded_img = base64.b64encode(buf.read()).decode("utf-8")
+    buf.close()
+
+    return f"data:image/png;base64,{encoded_img}"
+
+def fix_lux_code(lux_code):
+    
+    # Pattern to identify the ax.barh() function call
+    pattern = r"(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)"
+    # Replacement that ensures bars and measurements are properly formatted
+    replacement = r"ax.barh(bars.values, measurements.values, align='center')"
+    # Apply the substitution to the code to fix the barh() call
+    fixed_code = re.sub(pattern, replacement, lux_code, flags=re.DOTALL)
+    
+    return fixed_code
+
+def extract_vis_columns(visualisation):
+
+    extracted_columns = ()
+    # Convert Vis object to string and extract x and y column names
+    vis_str = str(visualisation)
+    match = re.search(r'x: ([^,]+), y: ([^)]+)', vis_str)
+    if match:
+        x_col, y_col = match.groups()
+        extracted_columns = (x_col.strip(), y_col.strip())
+
+    return extracted_columns
