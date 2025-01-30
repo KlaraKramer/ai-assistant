@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.cm import Set1
 import mpld3    
 import plotly.express as px
 from plotly.tools import mpl_to_plotly
@@ -27,8 +28,8 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# Global variable to store Lux recommendations
-recommendations = {}
+# # Global variable to store Lux recommendations
+# recommendations = {}
 
 # Global variable to store recommendation options
 rec_options = []
@@ -195,7 +196,7 @@ def extract_vis_columns(visualisation):
 )
 def update_ui(contents, n_clicks, drop_value, filename):
     global uploaded_df
-    global recommendations
+    # global recommendations
     global rec_options
 
     # If no data has been uploaded yet
@@ -374,10 +375,14 @@ def handle_enhance_click(n_clicks):
     global uploaded_df
 
     if n_clicks and uploaded_df is not None:
+        # Extract the selected columns from the stored selected_columns string
+        selected_cols_clean = selected_columns.replace('(', '').replace(')', '').replace("'", "").replace(',', '')
+        selected_column_tuple = tuple(selected_cols_clean.split())
         # Specify intent based on the selected columns
-        uploaded_df.intent = [selected_columns[0], selected_columns[1]]
+        uploaded_df.intent = [selected_column_tuple[0], selected_column_tuple[1]]
         # Generate new recommendations and store the resulting dictionary
         recommendations = uploaded_df.recommendation
+        print(recommendations)
         graph_components = []
         if recommendations:
             for selected_recommendations in recommendations.values():
