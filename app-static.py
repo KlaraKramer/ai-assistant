@@ -36,6 +36,9 @@ rec_options = []
 # Global variable to store the n_clicks_list for figures
 figure_clicks = []
 
+# Global variable to store the uploaded DataFrame
+uploaded_df = None
+
 # Set dashboard layout
 app.layout = dbc.Container([
     html.H1("Visual Data Engineering", className="text-center my-4"),
@@ -71,11 +74,9 @@ app.layout = dbc.Container([
     ])
 ])
 
-# Global variable to store the uploaded DataFrame
-uploaded_df = None
-
 # Function to parse uploaded data
 def parse_contents(contents, filename):
+
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
@@ -85,11 +86,13 @@ def parse_contents(contents, filename):
         df.rename(columns=lambda x: x.lower().replace(" ", "_").replace("-", "_"), inplace=True)
         # Remove all special characters from column names
         df.rename(columns=lambda x: x.lower().replace(":", "").replace("$", "").replace("(", "").replace(")", ""), inplace=True)
+
         return df
+
     return None
 
 def create_styled_matplotlib_figure(fig):
-    """Apply Plotly-like styling to an existing Matplotlib figure."""
+    # Apply Plotly-like styling to an existing Matplotlib figure
     
     # Set the figure background to white (to match Plotly)
     fig.patch.set_facecolor("white")
@@ -128,29 +131,22 @@ def create_styled_matplotlib_figure(fig):
 
 
 def fig_to_base64(fig):
-    """Convert a Matplotlib figure to a base64-encoded PNG."""
+
+    # Convert a Matplotlib figure to a base64-encoded PNG
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     encoded_img = base64.b64encode(buf.read()).decode("utf-8")
     buf.close()
+
     return f"data:image/png;base64,{encoded_img}"
 
 def fix_lux_code(lux_code):
-    """
-    This function takes the Lux-generated code as input, identifies
-    and fixes any syntax issues related to the `ax.barh()` function.
-    Specifically, it replaces the incorrectly formatted bar data with
-    proper `.values` access to the Pandas Series.
-    """
     
-    # Pattern to identify the `ax.barh()` function call
-    # barh_pattern = r"(ax\.barh\().*?(dtype: object,.*?dtype: int64.*?)\)"
+    # Pattern to identify the ax.barh() function call
     pattern = r"(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)"
-    
     # Replacement that ensures bars and measurements are properly formatted
     replacement = r"ax.barh(bars.values, measurements.values, align='center')"
-
     # Apply the substitution to the code to fix the barh() call
     fixed_code = re.sub(pattern, replacement, lux_code, flags=re.DOTALL)
     
@@ -159,11 +155,9 @@ def fix_lux_code(lux_code):
 def extract_vis_columns(visualisation):
 
     extracted_columns = ()
-
-    # Convert Vis object to string and extract x and y columns
+    # Convert Vis object to string and extract x and y column names
     vis_str = str(visualisation)
     match = re.search(r'x: ([^,]+), y: ([^)]+)', vis_str)
-
     if match:
         x_col, y_col = match.groups()
         extracted_columns = (x_col.strip(), y_col.strip())
@@ -184,14 +178,15 @@ def extract_vis_columns(visualisation):
     prevent_initial_call=True
 )
 def update_ui(contents, n_clicks, drop_value, filename):
+    global uploaded_df
+    global recommendations
+    global rec_options
+
     # If no data has been uploaded yet
     if contents is None:
         return html.Div("Unsupported file type."), {'display': 'none'}, {'display': 'none'}, html.Div("No recommendations available. Upload data first."), []
 
     # Handle file upload (uploading data)
-    global uploaded_df
-    global recommendations
-    global rec_options
     if contents:
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
@@ -209,17 +204,10 @@ def update_ui(contents, n_clicks, drop_value, filename):
                     dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
                 ]),
                 {'display': 'none'},  # Hide dropdown
-                {'display': 'none'},  # Hide recommendations container initially
+                {'display': 'none'},  # Hide recommendations container
                 [],
                 rec_options
             )
-
-    if n_clicks:
-        # Make the dropdown visible when the button is clicked
-        dropdown_style = {'display': 'block'}
-    else:
-        # Keep the dropdown hidden by default
-        dropdown_style = {'display': 'none'}
 
     # Handle recommendation displaying
     if n_clicks and uploaded_df is not None:
@@ -257,28 +245,25 @@ def update_ui(contents, n_clicks, drop_value, filename):
 
                         # plotly_fig.update_layout(width=1000, height=600)
 
-                        # Append the graph as a Dash Graph component
-                        # Wrap Graph in Div to track clicks
+                        # Append the graph as a Dash Graph component and wrap it in Div to track clicks
                         graph_components.append(
                             html.Div(
                                 children=[
                                     dcc.Graph(
-                                        id={'type': 'dynamic-graph', 'index': i},  # ID without columns
+                                        id={'type': 'dynamic-graph', 'index': i},
                                         figure=plotly_fig,
                                         style={'flex': '1 0 30%', 'margin': '5px'}
                                     )
                                 ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in parent Div
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in ID
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
                         )
                     except ValueError as e:
-                        error_message = str(e)
-                        print(f"Error during mpl_to_plotly conversion: {error_message}")
-
+                        # error_message = str(e)
                         # If an error occurs, display the static Matplotlib image instead
-                        print("Falling back to displaying a static image.")
+                        print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
 
                         # Create the styled Matplotlib figure
                         fallback_fig = create_styled_matplotlib_figure(fig)
@@ -286,25 +271,23 @@ def update_ui(contents, n_clicks, drop_value, filename):
                         # Convert Matplotlib figure to base64 image
                         img_src = fig_to_base64(fallback_fig)
 
-                        # Append the image as an Img component
-                        # Wrap Image in Div to track clicks
+                        # Append the image as an Img component and wrap it in Div to track clicks
                         graph_components.append(
                             html.Div(
                                 children=[
                                     html.Img(
-                                        id={'type': 'image', 'index': i},  # ID without columns
+                                        id={'type': 'image', 'index': i}, 
                                         src=img_src,
                                         style={'flex': '1 0 27%', 'margin': '5px'}
                                     )
                                 ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in parent Div
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns ID
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
                         )
 
                 # Return all Graph components inside a flexbox container
-                # Return the output for recommendations
                 return (
                     html.Div([
                         html.H5(f"Uploaded File: {filename}"),
@@ -340,29 +323,26 @@ def update_rec_option(value):
 @app.callback(
     [Output(component_id='vis-selection-output', component_property='children'),
      Output(component_id='vis-selection-output', component_property='style')],
-    [Input({'type': 'graph-container', 'index': ALL, 'columns': ALL}, 'n_clicks')],
-    [State({'type': 'graph-container', 'index': ALL, 'columns': ALL}, 'id')],
+    [Input(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='n_clicks')],
+    [State(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='id')],
     prevent_initial_call=True
 )
 def handle_graph_click(n_clicks_list, component_ids):
     global figure_clicks
-    print("...n_clicks_list: ", n_clicks_list, "..........")
-    print("...figure_clicks: ", figure_clicks, "..........")
-    # Find which graph was clicked
+    # Find which graph was clicked by finding the difference between the global figure_clicks list and the new n_clicks_list
     if len(figure_clicks) == len(n_clicks_list):
         arr1 = np.array(figure_clicks)
         arr2 = np.array(n_clicks_list)
         clicked_index = np.where(arr1 != arr2)[0][-1]
-    else:
-        clicked_index = None
-    print("---clicked_index: ", clicked_index)
 
-    if clicked_index is not None:
+        # Extract the selected columns, and display them to the console and the dashboard user
         selected_columns = component_ids[clicked_index]['columns']
         print("Selected Columns:", selected_columns)
+        # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
         figure_clicks = n_clicks_list
-        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}
+        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}        
 
+    # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
     figure_clicks = n_clicks_list
     return dash.no_update, {'display': 'none'}
 
