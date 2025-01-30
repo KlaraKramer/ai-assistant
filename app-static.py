@@ -1,5 +1,5 @@
 import dash
-from dash import dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output, State, ALL
 import dash_bootstrap_components as dbc
 import pandas as pd
 import matplotlib
@@ -15,6 +15,7 @@ from io import BytesIO
 import IPython.display as display
 from PIL import Image
 import re
+import numpy as np
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath("./lux"))
@@ -31,6 +32,9 @@ recommendations = {}
 
 # Global variable to store recommendation options
 rec_options = []
+
+# Global variable to store the n_clicks_list for figures
+figure_clicks = []
 
 # Set dashboard layout
 app.layout = dbc.Container([
@@ -61,6 +65,7 @@ app.layout = dbc.Container([
             id='rec-dropdown',
             style={'display': 'none'}  # Initially hidden
         ),
+        html.Div(id='vis-selection-output', style={'display': 'none'}),
         html.Div(id='rec-output-container', style={'display': 'none'}),
         html.Div(id="lux-output", className="mt-4")
     ])
@@ -151,6 +156,20 @@ def fix_lux_code(lux_code):
     
     return fixed_code
 
+def extract_vis_columns(visualisation):
+
+    extracted_columns = ()
+
+    # Convert Vis object to string and extract x and y columns
+    vis_str = str(visualisation)
+    match = re.search(r'x: ([^,]+), y: ([^)]+)', vis_str)
+
+    if match:
+        x_col, y_col = match.groups()
+        extracted_columns = (x_col.strip(), y_col.strip())
+
+    return extracted_columns
+
 # Callback to handle both the file upload and button click
 @app.callback(
     [Output(component_id='output-data-upload', component_property='children'),
@@ -181,6 +200,7 @@ def update_ui(contents, n_clicks, drop_value, filename):
             uploaded_df = pd.DataFrame(uploaded_df)
             # Generate recommendations and store the resulting dictionary explicitly
             recommendations = uploaded_df.recommendation
+            # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
             rec_options = [{'label': key, 'value': key} for key in recommendations]
             # Return the output for file upload
             return_file_upload = (
@@ -214,7 +234,10 @@ def update_ui(contents, n_clicks, drop_value, filename):
             if selected_recommendations:
                 graph_components = []
 
-                for vis in selected_recommendations:
+                for i, vis in enumerate(selected_recommendations):
+
+                    # Get the relevant column names
+                    selected_columns = extract_vis_columns(vis)
                     
                     # Initialise variables that will be specified in the fig_code 
                     fig, ax = plt.subplots()
@@ -234,9 +257,21 @@ def update_ui(contents, n_clicks, drop_value, filename):
 
                         # plotly_fig.update_layout(width=1000, height=600)
 
-                        # Append the figure as a Dash Graph component
+                        # Append the graph as a Dash Graph component
+                        # Wrap Graph in Div to track clicks
                         graph_components.append(
-                            dcc.Graph(figure=plotly_fig, style={'flex': '1 0 30%', 'margin': '5px'})
+                            html.Div(
+                                children=[
+                                    dcc.Graph(
+                                        id={'type': 'dynamic-graph', 'index': i},  # ID without columns
+                                        figure=plotly_fig,
+                                        style={'flex': '1 0 30%', 'margin': '5px'}
+                                    )
+                                ],
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in parent Div
+                                style={'cursor': 'pointer'},  # Indicate clickability
+                                n_clicks=0  # Track clicks
+                            )
                         )
                     except ValueError as e:
                         error_message = str(e)
@@ -252,8 +287,20 @@ def update_ui(contents, n_clicks, drop_value, filename):
                         img_src = fig_to_base64(fallback_fig)
 
                         # Append the image as an Img component
+                        # Wrap Image in Div to track clicks
                         graph_components.append(
-                            html.Img(src=img_src, style={'flex': '1 0 30%', 'margin': '5px'})
+                            html.Div(
+                                children=[
+                                    html.Img(
+                                        id={'type': 'image', 'index': i},  # ID without columns
+                                        src=img_src,
+                                        style={'flex': '1 0 27%', 'margin': '5px'}
+                                    )
+                                ],
+                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_columns)},  # Store columns in parent Div
+                                style={'cursor': 'pointer'},  # Indicate clickability
+                                n_clicks=0  # Track clicks
+                            )
                         )
 
                 # Return all Graph components inside a flexbox container
@@ -288,6 +335,36 @@ def update_rec_option(value):
     if value is None:
         value = ""
     return f'Showing {value} recommendations'
+
+# Callback to handle graph clicks
+@app.callback(
+    [Output(component_id='vis-selection-output', component_property='children'),
+     Output(component_id='vis-selection-output', component_property='style')],
+    [Input({'type': 'graph-container', 'index': ALL, 'columns': ALL}, 'n_clicks')],
+    [State({'type': 'graph-container', 'index': ALL, 'columns': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_graph_click(n_clicks_list, component_ids):
+    global figure_clicks
+    print("...n_clicks_list: ", n_clicks_list, "..........")
+    print("...figure_clicks: ", figure_clicks, "..........")
+    # Find which graph was clicked
+    if len(figure_clicks) == len(n_clicks_list):
+        arr1 = np.array(figure_clicks)
+        arr2 = np.array(n_clicks_list)
+        clicked_index = np.where(arr1 != arr2)[0][-1]
+    else:
+        clicked_index = None
+    print("---clicked_index: ", clicked_index)
+
+    if clicked_index is not None:
+        selected_columns = component_ids[clicked_index]['columns']
+        print("Selected Columns:", selected_columns)
+        figure_clicks = n_clicks_list
+        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}
+
+    figure_clicks = n_clicks_list
+    return dash.no_update, {'display': 'none'}
 
 # Run the Dash app
 if __name__ == '__main__':
