@@ -17,7 +17,6 @@ from lux.vis.Vis import Vis
 
 # Function to parse uploaded data
 def parse_contents(contents, filename):
-
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
@@ -29,12 +28,10 @@ def parse_contents(contents, filename):
         df.rename(columns=lambda x: x.lower().replace(":", "").replace("$", "").replace("(", "").replace(")", ""), inplace=True)
 
         return df
-
     return None
 
 def create_styled_matplotlib_figure(fig):
     # Apply Plotly-like styling to an existing Matplotlib figure
-    
     # Set the figure background to white (to match Plotly)
     fig.patch.set_facecolor("white")
 
@@ -67,34 +64,28 @@ def create_styled_matplotlib_figure(fig):
     ax.spines["right"].set_visible(False)
     ax.spines["bottom"].set_color("#AAB8C2")  # Light gray for a cleaner look
     ax.spines["left"].set_color("#AAB8C2")
-
     return fig
 
 
 def fig_to_base64(fig):
-
     # Convert a Matplotlib figure to a base64-encoded PNG
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     encoded_img = base64.b64encode(buf.read()).decode("utf-8")
     buf.close()
-
     return f"data:image/png;base64,{encoded_img}"
 
 def fix_lux_code(lux_code):
-    
     # Pattern to identify the ax.barh() function call
     pattern = r"(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)"
     # Replacement that ensures bars and measurements are properly formatted
     replacement = r"ax.barh(bars.values, measurements.values, align='center')"
     # Apply the substitution to the code to fix the barh() call
     fixed_code = re.sub(pattern, replacement, lux_code, flags=re.DOTALL)
-    
     return fixed_code
 
 def extract_vis_columns(visualisation):
-
     extracted_columns = ()
     # Convert Vis object to string and extract x and y column names
     vis_str = str(visualisation)
@@ -102,7 +93,6 @@ def extract_vis_columns(visualisation):
     if match:
         x_col, y_col = match.groups()
         extracted_columns = (x_col.strip(), y_col.strip())
-
     return extracted_columns
 
 def parse_vis_string(vis_str):
@@ -130,5 +120,4 @@ def parse_vis_string(vis_str):
     # Assign score if available
     if score is not None:
         vis.score = score
-
     return vis

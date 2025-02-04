@@ -14,6 +14,7 @@ import os
 import numpy as np
 
 from helper_functions import *
+from outlier_isolation_forest import *
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath("./lux"))
@@ -43,51 +44,95 @@ selected_columns = ()
 # Global variable to store Lux Vis objects and the indices corresponding to the figures they are displayed in
 vis_objects = {}
 
+# The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
+# styling the progress bar
+PROGRESS_BAR_STYLE = {
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "12rem",
+    "padding": "2rem 1rem",
+    "background-color": "#333333",
+}
+
+# padding for the main dashboard
+DASHBOARD_STYLE = {
+    "margin-left": "8rem",
+    # "margin-right": "2rem",
+    # "padding": "2rem 1rem",
+}
+
+progress_bar = html.Div(
+    [
+        html.H2("Progress", className="display-6", style={'color': 'white'}),
+        html.Hr(),
+        dbc.Nav(
+            [
+                dbc.NavLink("Data loading", href="#output-data-upload", active="exact", id='progress-load', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink("Duplicate removal", href="#lux-output", active="exact", id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink("Outlier handling", href="#outlier", active="exact", id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
+            ],
+            vertical=True,
+            pills=True,
+        ),
+    ],
+    style=PROGRESS_BAR_STYLE,
+)
+
+dashboard = html.Div(id="dashboard", children=[
+    dbc.Container([
+        html.H1("Visual Data Engineering", className="text-center my-4"),
+
+        # File upload component
+        dcc.Upload(
+            id='upload-data',
+            children=html.Div([
+                'Drag and Drop or ', html.A('Select a CSV File')
+            ]),
+            style={
+                'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                'borderWidth': '1px', 'borderStyle': 'dashed',
+                'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
+            },
+        ),
+
+        # Placeholder for uploaded data and visualisations
+        html.Div(id='output-data-upload', className="my-4"),
+
+        html.Div([
+            # # Button to trigger Lux recommendations
+            # dbc.Button(
+            #     "Show Recommendations", 
+            #     id="show-recs", 
+            #     color="primary", 
+            #     className="mt-2"
+            # ),
+            # # Dropdown to choose recommendation option (initially hidden)
+            # dcc.Dropdown(
+            #     placeholder="Select a recommendation option", 
+            #     id='rec-dropdown',
+            #     style={'display': 'none'}  # Initially hidden
+            # ),
+            # html.Div(id='rec-output-container', style={'display': 'none'}),
+            html.Div(id='lux-output', className='mt-4'),
+            html.Div(id='vis-selection-output'), # , style={'display': 'none'}
+            dbc.Button(
+                "Enhance",
+                id='enhance-button',
+                className="btn btn-success",
+                style={'display': 'none', 'margin-left': '10px'}
+            ),
+            html.Div(id='enhanced-output', className='mt-4')
+        ])
+    ]) # style={'justify': "center", 'align': "center"})
+], style=DASHBOARD_STYLE)
+
 # Set dashboard layout
 app.layout = dbc.Container([
-    html.H1("Visual Data Engineering", className="text-center my-4"),
-
-    # File upload component
-    dcc.Upload(
-        id='upload-data',
-        children=html.Div([
-            'Drag and Drop or ', html.A('Select a CSV File')
-        ]),
-        style={
-            'width': '100%', 'height': '60px', 'lineHeight': '60px',
-            'borderWidth': '1px', 'borderStyle': 'dashed',
-            'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
-        },
-    ),
-
-    # Placeholder for uploaded data and visualisations
-    html.Div(id='output-data-upload', className="my-4"),
-
-    html.Div([
-        # # Button to trigger Lux recommendations
-        # dbc.Button(
-        #     "Show Recommendations", 
-        #     id="show-recs", 
-        #     color="primary", 
-        #     className="mt-2"
-        # ),
-        # # Dropdown to choose recommendation option (initially hidden)
-        # dcc.Dropdown(
-        #     placeholder="Select a recommendation option", 
-        #     id='rec-dropdown',
-        #     style={'display': 'none'}  # Initially hidden
-        # ),
-        # html.Div(id='rec-output-container', style={'display': 'none'}),
-        html.Div(id='lux-output', className='mt-4'),
-        html.Div(id='vis-selection-output', style={'display': 'none'}),
-        dbc.Button(
-            "Enhance",
-            id='enhance-button',
-            className="btn btn-success",
-            style={'display': 'none', 'margin-left': '10px'}
-        ),
-        html.Div(id='enhanced-output', className='mt-4')
-    ])
+    dcc.Location(id="url"),
+    progress_bar,
+    dashboard,
 ])
 
 # Callback to handle the file upload
