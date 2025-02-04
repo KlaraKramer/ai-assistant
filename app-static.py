@@ -17,7 +17,7 @@ from helper_functions import *
 from outlier_isolation_forest import *
 
 # Add locally cloned Lux source code to path, and import Lux from there
-sys.path.insert(0, os.path.abspath("./lux"))
+sys.path.insert(0, os.path.abspath('./lux'))
 import lux
 
 # Use non-interactive backend
@@ -47,31 +47,29 @@ vis_objects = {}
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
 PROGRESS_BAR_STYLE = {
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "12rem",
-    "padding": "2rem 1rem",
-    "background-color": "#333333",
+    'position': 'fixed',
+    'top': 0,
+    'left': 0,
+    'bottom': 0,
+    'width': '12rem',
+    'padding': '2rem 1rem',
+    'background-color': '#333333',
 }
 
 # padding for the main dashboard
 DASHBOARD_STYLE = {
-    "margin-left": "8rem",
-    # "margin-right": "2rem",
-    # "padding": "2rem 1rem",
+    'margin-left': '8rem'
 }
 
 progress_bar = html.Div(
     [
-        html.H2("Progress", className="display-6", style={'color': 'white'}),
+        html.H2('Progress', className='display-6', style={'color': 'white'}),
         html.Hr(),
         dbc.Nav(
             [
-                dbc.NavLink("Data loading", href="#output-data-upload", active="exact", id='progress-load', style={'background-color': 'red', 'color': 'white'}),
-                dbc.NavLink("Duplicate removal", href="#lux-output", active="exact", id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
-                dbc.NavLink("Outlier handling", href="#outlier", active="exact", id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Data loading', href='#output-data-upload', active='exact', id='progress-load', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Duplicate removal', href='#lux-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Outlier handling', href='#outlier', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
             ],
             vertical=True,
             pills=True,
@@ -80,9 +78,9 @@ progress_bar = html.Div(
     style=PROGRESS_BAR_STYLE,
 )
 
-dashboard = html.Div(id="dashboard", children=[
+dashboard = html.Div(id='dashboard', children=[
     dbc.Container([
-        html.H1("Visual Data Engineering", className="text-center my-4"),
+        html.H1('Visual Data Engineering', className='text-center my-4'),
 
         # File upload component
         dcc.Upload(
@@ -98,19 +96,19 @@ dashboard = html.Div(id="dashboard", children=[
         ),
 
         # Placeholder for uploaded data and visualisations
-        html.Div(id='output-data-upload', className="my-4"),
+        html.Div(id='output-data-upload', className='my-4'),
 
         html.Div([
             # # Button to trigger Lux recommendations
             # dbc.Button(
-            #     "Show Recommendations", 
-            #     id="show-recs", 
-            #     color="primary", 
-            #     className="mt-2"
+            #     'Show Recommendations', 
+            #     id='show-recs', 
+            #     color='primary', 
+            #     className='mt-2'
             # ),
             # # Dropdown to choose recommendation option (initially hidden)
             # dcc.Dropdown(
-            #     placeholder="Select a recommendation option", 
+            #     placeholder='Select a recommendation option', 
             #     id='rec-dropdown',
             #     style={'display': 'none'}  # Initially hidden
             # ),
@@ -118,19 +116,19 @@ dashboard = html.Div(id="dashboard", children=[
             html.Div(id='lux-output', className='mt-4'),
             html.Div(id='vis-selection-output'), # , style={'display': 'none'}
             dbc.Button(
-                "Enhance",
+                'Enhance',
                 id='enhance-button',
-                className="btn btn-success",
+                className='btn btn-success',
                 style={'display': 'none', 'margin-left': '10px'}
             ),
             html.Div(id='enhanced-output', className='mt-4')
         ])
-    ]) # style={'justify': "center", 'align': "center"})
+    ]) # style={'justify': 'center', 'align': 'center'})
 ], style=DASHBOARD_STYLE)
 
 # Set dashboard layout
 app.layout = dbc.Container([
-    dcc.Location(id="url"),
+    dcc.Location(id='url'),
     progress_bar,
     dashboard,
 ])
@@ -150,7 +148,7 @@ def update_ui(contents, filename):
 
     # If no data has been uploaded yet
     if contents is None:
-        return html.Div("Unsupported file type."), html.Div("No recommendations available. Upload data first.")
+        return html.Div('Unsupported file type.'), html.Div('No recommendations available. Upload data first.')
 
     # Handle file upload (uploading data)
     else:
@@ -216,7 +214,7 @@ def update_ui(contents, filename):
                     except ValueError:
                         # error_message = str(e)
                         # If an error occurs, display the static Matplotlib image instead
-                        print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
+                        print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
 
                         # Create the styled Matplotlib figure
                         fallback_fig = create_styled_matplotlib_figure(fig)
@@ -247,7 +245,7 @@ def update_ui(contents, filename):
                     # Return all Graph components inside a flexbox container
                     return (
                         html.Div([
-                            html.H5(f"Uploaded File: {filename}"),
+                            html.H5(f'Uploaded File: {filename}'),
                             dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
                         ]),
                         html.Div(
@@ -268,7 +266,7 @@ def update_ui(contents, filename):
 # )
 # def update_rec_option(value):
 #     if value is None:
-#         value = ""
+#         value = ''
 #     return f'Showing {value} recommendations'
 
 # Callback to handle graph clicks
@@ -293,10 +291,10 @@ def handle_graph_click(n_clicks_list, component_ids):
         # Extract the selected columns, and display them to the console and the dashboard user
         selected_columns = component_ids[clicked_index]['columns']
         selected_id = component_ids[clicked_index]['index']
-        print("Selected Columns:", selected_columns)
+        print('Selected Columns:', selected_columns)
         # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
         figure_clicks = n_clicks_list
-        return f"Selected Graph Columns: {selected_columns}", {'display': 'block'}, {'display': 'block'}     
+        return f'Selected Graph Columns: {selected_columns}', {'display': 'block'}, {'display': 'block'}     
 
     # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
     figure_clicks = n_clicks_list
@@ -334,8 +332,8 @@ def handle_enhance_click(n_clicks):
                 try:
                     fig_code = vis.to_matplotlib()
                 except ValueError:
-                    print("Error in to_matplotlib()")
-                    fig_code = ""
+                    print('Error in to_matplotlib()')
+                    fig_code = ''
                 fixed_fig_code = fix_lux_code(fig_code)
                 exec(fixed_fig_code)
 
@@ -343,7 +341,7 @@ def handle_enhance_click(n_clicks):
                 fig = plt.gcf()
                 plt.draw()
 
-                ax.legend(loc="upper right", bbox_to_anchor=(1, 1))
+                ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
 
                 # Try to convert Matplotlib figure to Plotly
                 try:
@@ -361,7 +359,7 @@ def handle_enhance_click(n_clicks):
                     )
                 except ValueError:
                     # If an error occurs, display the static Matplotlib image instead
-                    print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
+                    print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
 
                     # Create the styled Matplotlib figure
                     fallback_fig = create_styled_matplotlib_figure(fig)

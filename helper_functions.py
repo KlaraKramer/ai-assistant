@@ -11,7 +11,7 @@ from PIL import Image
 import plotly.express as px
 
 # Add locally cloned Lux source code to path, and import Lux from there
-sys.path.insert(0, os.path.abspath("./lux"))
+sys.path.insert(0, os.path.abspath('./lux'))
 import lux
 from lux.vis.Vis import Vis
 
@@ -23,9 +23,9 @@ def parse_contents(contents, filename):
     if filename.endswith('.csv'):
         df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         # Convert all column names to lowercase and replace spaces with underscores
-        df.rename(columns=lambda x: x.lower().replace(" ", "_").replace("-", "_"), inplace=True)
+        df.rename(columns=lambda x: x.lower().replace(' ', '_').replace('-', '_'), inplace=True)
         # Remove all special characters from column names
-        df.rename(columns=lambda x: x.lower().replace(":", "").replace("$", "").replace("(", "").replace(")", ""), inplace=True)
+        df.rename(columns=lambda x: x.lower().replace(':', '').replace('$', '').replace('(', '').replace(')', ''), inplace=True)
 
         return df
     return None
@@ -33,15 +33,15 @@ def parse_contents(contents, filename):
 def create_styled_matplotlib_figure(fig):
     # Apply Plotly-like styling to an existing Matplotlib figure
     # Set the figure background to white (to match Plotly)
-    fig.patch.set_facecolor("white")
+    fig.patch.set_facecolor('white')
 
     # Get the main axis
     ax = fig.axes[0] if fig.axes else fig.add_subplot(111)  # Ensure there is an axis
-    ax.set_facecolor("#E5ECF6")  # Light blue background only for the plotting area
+    ax.set_facecolor('#E5ECF6')  # Light blue background only for the plotting area
 
     # Update bar colours if applicable
     for patch in ax.patches:
-        patch.set_facecolor("#4C59C2")
+        patch.set_facecolor('#4C59C2')
 
         # Make bars slimmer
         if isinstance(patch, plt.Rectangle):  # Ensure it's a bar
@@ -52,35 +52,35 @@ def create_styled_matplotlib_figure(fig):
 
     # Style the labels
     ax.set_xlabel(ax.get_xlabel(), fontsize=10, labelpad=12, 
-                  bbox=dict(facecolor="white", edgecolor="none"))
+                  bbox=dict(facecolor='white', edgecolor='none'))
     ax.set_ylabel(ax.get_ylabel(), fontsize=10, labelpad=12, 
-                  bbox=dict(facecolor="white", edgecolor="none"))
+                  bbox=dict(facecolor='white', edgecolor='none'))
 
     # Style the tick labels
     ax.tick_params(axis='both', labelsize=7)
 
     # Remove unnecessary spines (top & right)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["bottom"].set_color("#AAB8C2")  # Light gray for a cleaner look
-    ax.spines["left"].set_color("#AAB8C2")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_color('#AAB8C2')  # Light gray for a cleaner look
+    ax.spines['left'].set_color('#AAB8C2')
     return fig
 
 
 def fig_to_base64(fig):
     # Convert a Matplotlib figure to a base64-encoded PNG
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight")
+    fig.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
-    encoded_img = base64.b64encode(buf.read()).decode("utf-8")
+    encoded_img = base64.b64encode(buf.read()).decode('utf-8')
     buf.close()
-    return f"data:image/png;base64,{encoded_img}"
+    return f'data:image/png;base64,{encoded_img}'
 
 def fix_lux_code(lux_code):
     # Pattern to identify the ax.barh() function call
-    pattern = r"(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)"
+    pattern = r'(ax\.barh\()(.*?dtype:.*?dtype:.*?)\)'
     # Replacement that ensures bars and measurements are properly formatted
-    replacement = r"ax.barh(bars.values, measurements.values, align='center')"
+    replacement = r'ax.barh(bars.values, measurements.values, align="center")'
     # Apply the substitution to the code to fix the barh() call
     fixed_code = re.sub(pattern, replacement, lux_code, flags=re.DOTALL)
     return fixed_code
@@ -97,13 +97,13 @@ def extract_vis_columns(visualisation):
 
 def parse_vis_string(vis_str):
     # Extract x and y axis
-    x_match = re.search(r"x:\s*([\w_]+)", vis_str)
-    y_match = re.search(r"y:\s*([\w_]+)", vis_str)
-    mark_match = re.search(r"mark:\s*([\w_]+)", vis_str)
-    score_match = re.search(r"score:\s*([\d.]+)", vis_str)
+    x_match = re.search(r'x:\s*([\w_]+)', vis_str)
+    y_match = re.search(r'y:\s*([\w_]+)', vis_str)
+    mark_match = re.search(r'mark:\s*([\w_]+)', vis_str)
+    score_match = re.search(r'score:\s*([\d.]+)', vis_str)
 
     if not x_match or not y_match:
-        raise ValueError("Invalid Vis string format")
+        raise ValueError('Invalid Vis string format')
 
     x_attr = x_match.group(1)
     y_attr = y_match.group(1)
@@ -111,7 +111,7 @@ def parse_vis_string(vis_str):
     score = float(score_match.group(1)) if score_match else None
 
     # Create Vis object (without 'mark' argument)
-    vis = Vis([{"x": x_attr}, {"y": y_attr}])
+    vis = Vis([{'x': x_attr}, {'y': y_attr}])
 
     # Set mark if available
     if mark:
