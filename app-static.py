@@ -25,8 +25,8 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# Global variable to store recommendation options
-rec_options = []
+# # Global variable to store recommendation options
+# rec_options = []
 
 # Global variable to store the n_clicks_list for figures
 figure_clicks = []
@@ -64,23 +64,22 @@ app.layout = dbc.Container([
     html.Div(id='output-data-upload', className="my-4"),
 
     html.Div([
-        # Button to trigger Lux recommendations
-        dbc.Button(
-            "Show Recommendations", 
-            id="show-recs", 
-            color="primary", 
-            className="mt-2"
-        ),
-        # Dropdown to choose recommendation option (initially hidden)
-        dcc.Dropdown(
-            placeholder="Select a recommendation option", 
-            id='rec-dropdown',
-            style={'display': 'none'}  # Initially hidden
-        ),
-        html.Div(id='rec-output-container', style={'display': 'none'}),
+        # # Button to trigger Lux recommendations
+        # dbc.Button(
+        #     "Show Recommendations", 
+        #     id="show-recs", 
+        #     color="primary", 
+        #     className="mt-2"
+        # ),
+        # # Dropdown to choose recommendation option (initially hidden)
+        # dcc.Dropdown(
+        #     placeholder="Select a recommendation option", 
+        #     id='rec-dropdown',
+        #     style={'display': 'none'}  # Initially hidden
+        # ),
+        # html.Div(id='rec-output-container', style={'display': 'none'}),
         html.Div(id='lux-output', className='mt-4'),
         html.Div(id='vis-selection-output', style={'display': 'none'}),
-        # html.Div(id='enhance-button-container'),
         dbc.Button(
             "Enhance",
             id='enhance-button',
@@ -91,30 +90,25 @@ app.layout = dbc.Container([
     ])
 ])
 
-# Callback to handle both the file upload and button click
+# Callback to handle the file upload
 @app.callback(
     [Output(component_id='output-data-upload', component_property='children'),
-     Output(component_id='rec-dropdown', component_property='style'),
-     Output(component_id='rec-output-container', component_property='style'),
-     Output(component_id='lux-output', component_property='children'),
-     Output(component_id='rec-dropdown', component_property='options')],
-    [Input(component_id='upload-data', component_property='contents'),
-     Input(component_id='show-recs', component_property='n_clicks'),
-     Input(component_id='rec-dropdown', component_property='value')],
+     Output(component_id='lux-output', component_property='children')],
+    [Input(component_id='upload-data', component_property='contents')],
     [State(component_id='upload-data', component_property='filename')],
     prevent_initial_call=True
 )
-def update_ui(contents, n_clicks, drop_value, filename):
+def update_ui(contents, filename):
     global uploaded_df
-    global rec_options
+    # global rec_options
     global vis_objects
 
     # If no data has been uploaded yet
     if contents is None:
-        return html.Div("Unsupported file type."), {'display': 'none'}, {'display': 'none'}, html.Div("No recommendations available. Upload data first."), []
+        return html.Div("Unsupported file type."), html.Div("No recommendations available. Upload data first.")
 
     # Handle file upload (uploading data)
-    if contents:
+    else:
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
         if uploaded_df is not None:
@@ -122,36 +116,20 @@ def update_ui(contents, n_clicks, drop_value, filename):
             uploaded_df = pd.DataFrame(uploaded_df)
             # Generate recommendations and store the resulting dictionary explicitly
             recommendations = uploaded_df.recommendation
-            # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
-            rec_options = [{'label': key, 'value': key} for key in recommendations]
-            # Return the output for file upload
-            return_file_upload = (
-                html.Div([
-                    html.H5(f"Uploaded File: {filename}"),
-                    dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
-                ]),
-                {'display': 'none'},  # Hide dropdown
-                {'display': 'none'},  # Hide recommendations container
-                [],
-                rec_options
-            )
 
-    # Handle recommendation displaying
-    if n_clicks and uploaded_df is not None:
-        if recommendations:
-            # Ensure drop_value is valid; default to the first option if not
-            if drop_value not in recommendations:
-                drop_value = rec_options[0]['value']
+            # Handle recommendation displaying
+            if recommendations:
+                # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
+                rec_options = [{'label': key, 'value': key} for key in recommendations]
+                # Access first recommendation group
+                first_rec = rec_options[0]['value']
+                selected_recommendations = recommendations[first_rec]
 
-            # Access specified recommendation group
-            selected_recommendations = recommendations[drop_value]
-
-            if selected_recommendations:
-                graph_components = []
-
-                for i, vis in enumerate(selected_recommendations):
-
+                if selected_recommendations:
+                    graph_components = []
                     # Populate vis_objects dictionary for referring back to the visualisations
+                    i = len(vis_objects)
+                    vis = selected_recommendations[0]
                     vis_objects[i] = vis
 
                     # Get the relevant column names
@@ -186,12 +164,11 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                     )
                                 ],
                                 id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns in ID
-                                # id={'type': 'graph-container', 'index': i, 'columns': str(vis)},
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
                         )
-                    except ValueError as e:
+                    except ValueError:
                         # error_message = str(e)
                         # If an error occurs, display the static Matplotlib image instead
                         print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
@@ -213,43 +190,41 @@ def update_ui(contents, n_clicks, drop_value, filename):
                                     )
                                 ],
                                 id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns ID
-                                # id={'type': 'graph-container', 'index': i, 'columns': str(vis)},
                                 style={'cursor': 'pointer'},  # Indicate clickability
                                 n_clicks=0  # Track clicks
                             )
                         )
 
-                # Return all Graph components inside a flexbox container
-                return (
-                    html.Div([
-                        html.H5(f"Uploaded File: {filename}"),
-                        dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
-                    ]),
-                    {'display': 'block'},  # Show dropdown
-                    {'display': 'block'},  # Show recommendations container
-                    html.Div(
-                        children=graph_components,
-                        style={
-                            'display': 'flex',
-                            'flexWrap': 'wrap',
-                            'justifyContent': 'space-around',
-                            'margin': '5px'
-                        }
-                    ),
-                    rec_options
-                )
-    else:
-        return return_file_upload      
+                    
+                    ### TO-DO: Add second visualisation here ###
 
-# Callback to choose which recommendations to display
-@app.callback(
-    Output(component_id='rec-output-container', component_property='children'),
-    Input(component_id='rec-dropdown', component_property='value')
-)
-def update_rec_option(value):
-    if value is None:
-        value = ""
-    return f'Showing {value} recommendations'
+
+                    # Return all Graph components inside a flexbox container
+                    return (
+                        html.Div([
+                            html.H5(f"Uploaded File: {filename}"),
+                            dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
+                        ]),
+                        html.Div(
+                            children=graph_components,
+                            style={
+                                'display': 'flex',
+                                'flexWrap': 'wrap',
+                                'justifyContent': 'space-around',
+                                'margin': '5px'
+                            }
+                        )
+                    )   
+
+# # Callback to choose which recommendations to display
+# @app.callback(
+#     Output(component_id='rec-output-container', component_property='children'),
+#     Input(component_id='rec-dropdown', component_property='value')
+# )
+# def update_rec_option(value):
+#     if value is None:
+#         value = ""
+#     return f'Showing {value} recommendations'
 
 # Callback to handle graph clicks
 @app.callback(
@@ -288,17 +263,13 @@ def handle_graph_click(n_clicks_list, component_ids):
     Input(component_id='enhance-button', component_property='n_clicks')
 )
 def handle_enhance_click(n_clicks):
-    global selected_columns
+    # global selected_columns
     global uploaded_df
     global vis_objects
     global selected_id
 
     if n_clicks and uploaded_df is not None:
-        # # Extract the selected columns from the stored selected_columns string
-        # selected_cols_clean = selected_columns.replace('(', '').replace(')', '').replace("'", "").replace(',', '')
-        # selected_column_tuple = tuple(selected_cols_clean.split())
-        # # Specify intent based on the selected columns
-        # uploaded_df.intent = [selected_column_tuple[0], selected_column_tuple[1]]
+        # Extract the selected visualisation from the stored vis_objects and specify Lux intent
         vis = vis_objects[selected_id]
         uploaded_df.intent = vis
         # Generate new recommendations and store the resulting dictionary
@@ -306,64 +277,61 @@ def handle_enhance_click(n_clicks):
         graph_components = []
         if recommendations:
             for selected_recommendations in recommendations.values():
-                for i, vis in enumerate(selected_recommendations):
+                # Populate vis_objects dictionary for referring back to the visualisations
+                i = len(vis_objects)
+                vis = selected_recommendations[0]
+                
+                # Initialise variables that will be specified in the fig_code 
+                fig, ax = plt.subplots()
+                tab20c = plt.get_cmap('tab20c')
 
-                    # # Get the relevant column names
-                    # selected_cols = extract_vis_columns(vis)
-                    
-                    # Initialise variables that will be specified in the fig_code 
-                    fig, ax = plt.subplots()
-                    tab20c = plt.get_cmap('tab20c')
+                # Render the visualisation using Lux
+                try:
+                    fig_code = vis.to_matplotlib()
+                except ValueError:
+                    print("Error in to_matplotlib()")
+                    fig_code = ""
+                fixed_fig_code = fix_lux_code(fig_code)
+                exec(fixed_fig_code)
 
-                    # Render the visualisation using Lux
-                    try:
-                        fig_code = vis.to_matplotlib()
-                    except ValueError:
-                        print("Error in to_matplotlib()")
-                        fig_code = ""
-                    # fig_code = vis.to_altair()
-                    fixed_fig_code = fix_lux_code(fig_code)
-                    exec(fixed_fig_code)
+                # Capture the current Matplotlib figure
+                fig = plt.gcf()
+                plt.draw()
 
-                    # Capture the current Matplotlib figure
-                    fig = plt.gcf()
-                    plt.draw()
+                ax.legend(loc="upper right", bbox_to_anchor=(1, 1))
 
-                    ax.legend(loc="upper right", bbox_to_anchor=(1, 1))
+                # Try to convert Matplotlib figure to Plotly
+                try:
+                    plotly_fig = mpl_to_plotly(fig)
 
-                    # Try to convert Matplotlib figure to Plotly
-                    try:
-                        plotly_fig = mpl_to_plotly(fig)
+                    # plotly_fig.update_layout(width=1000, height=600)
 
-                        # plotly_fig.update_layout(width=1000, height=600)
-
-                        # Append the graph as a Dash Graph component
-                        graph_components.append(
-                            dcc.Graph(
-                                id={'type': 'dynamic-graph', 'index': i},
-                                figure=plotly_fig,
-                                style={'flex': '1 0 30%', 'margin': '5px'}
-                            )
+                    # Append the graph as a Dash Graph component
+                    graph_components.append(
+                        dcc.Graph(
+                            id={'type': 'dynamic-graph', 'index': i},
+                            figure=plotly_fig,
+                            style={'flex': '1 0 30%', 'margin': '5px'}
                         )
-                    except ValueError as e:
-                        # error_message = str(e)
-                        # If an error occurs, display the static Matplotlib image instead
-                        print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
+                    )
+                except ValueError:
+                    # If an error occurs, display the static Matplotlib image instead
+                    print("Error during mpl_to_plotly conversion, falling back to displaying a static image.")
 
-                        # Create the styled Matplotlib figure
-                        fallback_fig = create_styled_matplotlib_figure(fig)
+                    # Create the styled Matplotlib figure
+                    fallback_fig = create_styled_matplotlib_figure(fig)
 
-                        # Convert Matplotlib figure to base64 image
-                        img_src = fig_to_base64(fallback_fig)
+                    # Convert Matplotlib figure to base64 image
+                    img_src = fig_to_base64(fallback_fig)
 
-                        # Append the image as an Img component
-                        graph_components.append(
-                            html.Img(
-                                id={'type': 'image', 'index': i}, 
-                                src=img_src,
-                                style={'flex': '1 0 27%', 'margin': '5px'}
-                            )
+                    # Append the image as an Img component
+                    graph_components.append(
+                        html.Img(
+                            id={'type': 'image', 'index': i}, 
+                            src=img_src,
+                            style={'flex': '1 0 27%', 'margin': '5px'}
                         )
+                    )
 
                 # Return all Graph components inside a flexbox container
                 return (
