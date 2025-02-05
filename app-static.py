@@ -28,9 +28,6 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# # Global variable to store recommendation options
-# rec_options = []
-
 # Global variable to store the n_clicks_list for figures
 figure_clicks = []
 
@@ -249,82 +246,38 @@ def handle_enhance_click(n_clicks):
         # Extract the selected visualisation from the stored vis_objects and specify Lux intent
         vis = vis_objects[selected_id]
         uploaded_df.intent = vis
-        # Generate new recommendations and store the resulting dictionary
-        recommendations = uploaded_df.recommendation
         graph_components = []
-        if recommendations:
-            for selected_recommendations in recommendations.values():
-                # Populate vis_objects dictionary for referring back to the visualisations
-                i = len(vis_objects)
-                vis = selected_recommendations[0]
-                
-                # Initialise variables that will be specified in the fig_code 
-                fig, ax = plt.subplots()
-                tab20c = plt.get_cmap('tab20c')
 
-                # Render the visualisation using Lux
-                try:
-                    fig_code = vis.to_matplotlib()
-                except ValueError:
-                    print('Error in to_matplotlib()')
-                    fig_code = ''
-                fixed_fig_code = fix_lux_code(fig_code)
-                exec(fixed_fig_code)
+        # Display the first recommended visualisation
+        vis1 = Vis(len(vis_objects), uploaded_df)
+        # Populate vis_objects dictionary for referring back to the visualisations
+        vis_objects[vis1.id] = vis1.lux_vis
+        # Append the graph, wrapped in a Div to track clicks, to graph_components
+        graph1 = Graph_component(vis1)
+        if graph1.div is not None:
+            graph_components.append(graph1.div)
+        else:
+            print("No recommendations available. Please upload data first.")
 
-                # Capture the current Matplotlib figure
-                fig = plt.gcf()
-                plt.draw()
 
-                ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+        ### TO-DO: Add second visualisation here ###
 
-                # Try to convert Matplotlib figure to Plotly
-                try:
-                    plotly_fig = mpl_to_plotly(fig)
 
-                    # plotly_fig.update_layout(width=1000, height=600)
+        # Return all Graph components inside a flexbox container
+        return (
+            html.Div(
+                children=graph_components,
+                style={
+                    'display': 'flex',
+                    'flexWrap': 'wrap',
+                    'justifyContent': 'space-around',
+                    'margin': '5px'
+                }
+            )
+        )
 
-                    # Append the graph as a Dash Graph component
-                    graph_components.append(
-                        dcc.Graph(
-                            id={'type': 'dynamic-graph', 'index': i},
-                            figure=plotly_fig,
-                            style={'flex': '1 0 30%', 'margin': '5px'}
-                        )
-                    )
-                except ValueError:
-                    # If an error occurs, display the static Matplotlib image instead
-                    print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
-
-                    # Create the styled Matplotlib figure
-                    fallback_fig = create_styled_matplotlib_figure(fig)
-
-                    # Convert Matplotlib figure to base64 image
-                    img_src = fig_to_base64(fallback_fig)
-
-                    # Append the image as an Img component
-                    graph_components.append(
-                        html.Img(
-                            id={'type': 'image', 'index': i}, 
-                            src=img_src,
-                            style={'flex': '1 0 27%', 'margin': '5px'}
-                        )
-                    )
-
-                # Return all Graph components inside a flexbox container
-                return (
-                    html.Div(
-                        children=graph_components,
-                        style={
-                            'display': 'flex',
-                            'flexWrap': 'wrap',
-                            'justifyContent': 'space-around',
-                            'margin': '5px'
-                        }
-                    )
-                )
     else:
         return dash.no_update
-
 
 
 # Run the Dash app

@@ -1,4 +1,6 @@
 from plotly.tools import mpl_to_plotly
+from matplotlib.cm import Set1
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from helper_functions import *
 
@@ -28,14 +30,21 @@ class Vis:
                 
                 # Initialise variables that will be specified in the fig_code 
                 fig, ax = plt.subplots()
+                tab20c = plt.get_cmap('tab20c')
                 # Render the visualisation using Lux
-                fig_code = self.lux_vis.to_matplotlib()
+                try:
+                    fig_code = self.lux_vis.to_matplotlib()
+                except ValueError:
+                    print('Error in to_matplotlib()')
+                    fig_code = ''
                 fixed_fig_code = fix_lux_code(fig_code)
                 exec(fixed_fig_code)
 
                 # Capture the current Matplotlib figure
                 fig = plt.gcf()
                 plt.draw()
+
+                # ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
 
                 # Try to convert Matplotlib figure to Plotly
                 try:
