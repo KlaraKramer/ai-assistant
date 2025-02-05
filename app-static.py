@@ -28,20 +28,26 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# Global variable to store the n_clicks_list for figures
-figure_clicks = []
+# Global variable to keep track of progress
+stage = 'data-loading'
 
 # Global variable to store the uploaded DataFrame
 uploaded_df = None
+
+# Global variable to store the name of the file currently being used
+file_name = None
+
+# Global variable to store Lux Vis objects and the indices corresponding to the figures they are displayed in
+vis_objects = {}
+
+# Global variable to store the n_clicks_list for figures
+figure_clicks = []
 
 # Global variable to store selected figure id
 selected_id = None
 
 # Global variable to store selected columns from clicking on a figure
 selected_columns = ()
-
-# Global variable to store Lux Vis objects and the indices corresponding to the figures they are displayed in
-vis_objects = {}
 
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
@@ -118,9 +124,19 @@ dashboard = html.Div(id='dashboard', children=[
                 'Enhance',
                 id='enhance-button',
                 className='btn btn-success',
-                style={'display': 'none', 'margin-left': '10px'}
+                style={'display': 'none'}
             ),
-            html.Div(id='enhanced-output', className='mt-4')
+            html.Div(id='enhanced-output', className='mt-4'),
+            dbc.Button(
+                'Finish Duplicate Removal',
+                id='duplicate-end-btn',
+                className='btn btn-success'
+            ),
+            dbc.Button(
+                'Finish Outlier Handling',
+                id='outlier-end-btn',
+                className='btn btn-success'
+            ),
         ])
     ]) # style={'justify': 'center', 'align': 'center'})
 ], style=DASHBOARD_STYLE)
@@ -142,8 +158,9 @@ app.layout = dbc.Container([
 )
 def update_ui(contents, filename):
     global uploaded_df
-    # global rec_options
+    global stage
     global vis_objects
+    global file_name
 
     # If no data has been uploaded yet
     if contents is None:
@@ -153,7 +170,9 @@ def update_ui(contents, filename):
     else:
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
+        file_name = filename
         if uploaded_df is not None:
+            stage = 'duplicate-removal'
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
             graph_components = []
@@ -189,16 +208,6 @@ def update_ui(contents, filename):
                     }
                 )
             )   
-
-# # Callback to choose which recommendations to display
-# @app.callback(
-#     Output(component_id='rec-output-container', component_property='children'),
-#     Input(component_id='rec-dropdown', component_property='value')
-# )
-# def update_rec_option(value):
-#     if value is None:
-#         value = ''
-#     return f'Showing {value} recommendations'
 
 # Callback to handle graph clicks
 @app.callback(
@@ -278,6 +287,44 @@ def handle_enhance_click(n_clicks):
 
     else:
         return dash.no_update
+
+# Callback to update progress
+@app.callback(
+    [Output(component_id='progress-load', component_property='style'),
+     Output(component_id='progress-duplicate', component_property='style'),
+     Output(component_id='progress-outlier', component_property='style')],
+    [Input(component_id='upload-data', component_property='contents'),
+     Input(component_id='duplicate-end-btn', component_property='n_clicks'),
+     Input(component_id='outlier-end-btn', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def update_progress_duplicate(contents, click_dup, click_out):
+    ctx = dash.callback_context
+    # Default colours
+    load_colour, dup_colour, out_colour = 'red', 'red', 'red'
+
+    # If buttons are clicked, change the respective progress bars
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'duplicate-end-btn' in changed_id:
+        load_colour = 'green'
+        dup_colour = 'green'
+        out_colour = 'red'
+    if 'outlier-end-btn' in changed_id:
+        load_colour = 'green'
+        dup_colour = 'green'
+        out_colour = 'green'
+    
+    # If a new file is uploaded, reset dup_colour and out_colour to 'red'
+    if ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
+        load_colour = 'green'
+        dup_colour = 'red'
+        out_colour = 'red'
+    
+    return (
+        {'background-color': load_colour, 'color': 'white'},
+        {'background-color': dup_colour, 'color': 'white'},
+        {'background-color': out_colour, 'color': 'white'}
+    )
 
 
 # Run the Dash app
