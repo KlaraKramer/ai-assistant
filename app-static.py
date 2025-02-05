@@ -15,6 +15,7 @@ import numpy as np
 
 from helper_functions import *
 from outlier_isolation_forest import *
+from vis import Vis
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath('./lux'))
@@ -157,107 +158,148 @@ def update_ui(contents, filename):
         if uploaded_df is not None:
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
-            # Generate recommendations and store the resulting dictionary explicitly
-            recommendations = uploaded_df.recommendation
-
-            # Handle recommendation displaying
-            if recommendations:
-                # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
-                rec_options = [{'label': key, 'value': key} for key in recommendations]
-                # Access first recommendation group
-                first_rec = rec_options[0]['value']
-                selected_recommendations = recommendations[first_rec]
-
-                if selected_recommendations:
-                    graph_components = []
-                    # Populate vis_objects dictionary for referring back to the visualisations
-                    i = len(vis_objects)
-                    vis = selected_recommendations[0]
-                    vis_objects[i] = vis
-
-                    # Get the relevant column names
-                    selected_cols = extract_vis_columns(vis)
-                    
-                    # Initialise variables that will be specified in the fig_code 
-                    fig, ax = plt.subplots()
-
-                    # Render the visualisation using Lux
-                    fig_code = vis.to_matplotlib()
-                    fixed_fig_code = fix_lux_code(fig_code)
-                    exec(fixed_fig_code)
-
-                    # Capture the current Matplotlib figure
-                    fig = plt.gcf()
-                    plt.draw()
-
-                    # Try to convert Matplotlib figure to Plotly
-                    try:
-                        plotly_fig = mpl_to_plotly(fig)
-
-                        # plotly_fig.update_layout(width=1000, height=600)
-
-                        # Append the graph as a Dash Graph component and wrap it in Div to track clicks
-                        graph_components.append(
-                            html.Div(
-                                children=[
-                                    dcc.Graph(
-                                        id={'type': 'dynamic-graph', 'index': i},
-                                        figure=plotly_fig,
-                                        style={'flex': '1 0 30%', 'margin': '5px'}
-                                    )
-                                ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns in ID
-                                style={'cursor': 'pointer'},  # Indicate clickability
-                                n_clicks=0  # Track clicks
+            graph_components = []
+            # Display the first recommended visualisation
+            vis1 = Vis(len(vis_objects), uploaded_df)
+            figure1 = vis1.plot()
+            # Populate vis_objects dictionary for referring back to the visualisations
+            vis_objects[vis1.id] = vis1.lux_vis
+            if vis1.output_type == 'plotly':
+                # Append the graph as a Dash Graph component and wrap it in Div to track clicks
+                graph_components.append(
+                    html.Div(
+                        children=[
+                            dcc.Graph(
+                                id={'type': 'dynamic-graph', 'index': vis1.id},
+                                figure=figure1,
+                                style={'flex': '1 0 30%', 'margin': '5px'}
                             )
-                        )
-                    except ValueError:
-                        # error_message = str(e)
-                        # If an error occurs, display the static Matplotlib image instead
-                        print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
-
-                        # Create the styled Matplotlib figure
-                        fallback_fig = create_styled_matplotlib_figure(fig)
-
-                        # Convert Matplotlib figure to base64 image
-                        img_src = fig_to_base64(fallback_fig)
-
-                        # Append the image as an Img component and wrap it in Div to track clicks
-                        graph_components.append(
-                            html.Div(
-                                children=[
-                                    html.Img(
-                                        id={'type': 'image', 'index': i}, 
-                                        src=img_src,
-                                        style={'flex': '1 0 27%', 'margin': '5px'}
-                                    )
-                                ],
-                                id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns ID
-                                style={'cursor': 'pointer'},  # Indicate clickability
-                                n_clicks=0  # Track clicks
+                        ],
+                        id={'type': 'graph-container', 'index': vis1.id, 'columns': str(vis1.columns)},  # Store columns in ID
+                        style={'cursor': 'pointer'},  # Indicate clickability
+                        n_clicks=0  # Track clicks
+                    )
+                )
+            elif vis1.output_type == 'img':
+                # Append the image as an Img component and wrap it in Div to track clicks
+                graph_components.append(
+                    html.Div(
+                        children=[
+                            html.Img(
+                                id={'type': 'image', 'index': vis1.id}, 
+                                src=figure1,
+                                style={'flex': '1 0 27%', 'margin': '5px'}
                             )
-                        )
+                        ],
+                        id={'type': 'graph-container', 'index': vis1.id, 'columns': str(vis1.columns)},  # Store columns ID
+                        style={'cursor': 'pointer'},  # Indicate clickability
+                        n_clicks=0  # Track clicks
+                    )
+                )
+            else:
+                print(figure1)
+
+            # # Generate recommendations and store the resulting dictionary explicitly
+            # recommendations = uploaded_df.recommendation
+
+            # # Handle recommendation displaying
+            # if recommendations:
+            #     # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
+            #     rec_options = [{'label': key, 'value': key} for key in recommendations]
+            #     # Access first recommendation group
+            #     first_rec = rec_options[0]['value']
+            #     selected_recommendations = recommendations[first_rec]
+
+            #     if selected_recommendations:
+            #         graph_components = []
+            #         # Populate vis_objects dictionary for referring back to the visualisations
+            #         i = len(vis_objects)
+            #         vis = selected_recommendations[0]
+            #         vis_objects[i] = vis
+
+            #         # Get the relevant column names
+            #         selected_cols = extract_vis_columns(vis)
+                    
+            #         # Initialise variables that will be specified in the fig_code 
+            #         fig, ax = plt.subplots()
+
+            #         # Render the visualisation using Lux
+            #         fig_code = vis.to_matplotlib()
+            #         fixed_fig_code = fix_lux_code(fig_code)
+            #         exec(fixed_fig_code)
+
+            #         # Capture the current Matplotlib figure
+            #         fig = plt.gcf()
+            #         plt.draw()
+
+            #         # Try to convert Matplotlib figure to Plotly
+            #         try:
+            #             plotly_fig = mpl_to_plotly(fig)
+
+            #             # plotly_fig.update_layout(width=1000, height=600)
+
+            #             # Append the graph as a Dash Graph component and wrap it in Div to track clicks
+            #             graph_components.append(
+            #                 html.Div(
+            #                     children=[
+            #                         dcc.Graph(
+            #                             id={'type': 'dynamic-graph', 'index': i},
+            #                             figure=plotly_fig,
+            #                             style={'flex': '1 0 30%', 'margin': '5px'}
+            #                         )
+            #                     ],
+            #                     id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns in ID
+            #                     style={'cursor': 'pointer'},  # Indicate clickability
+            #                     n_clicks=0  # Track clicks
+            #                 )
+            #             )
+            #         except ValueError:
+            #             # error_message = str(e)
+            #             # If an error occurs, display the static Matplotlib image instead
+            #             print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
+
+            #             # Create the styled Matplotlib figure
+            #             fallback_fig = create_styled_matplotlib_figure(fig)
+
+            #             # Convert Matplotlib figure to base64 image
+            #             img_src = fig_to_base64(fallback_fig)
+
+            #             # Append the image as an Img component and wrap it in Div to track clicks
+            #             graph_components.append(
+            #                 html.Div(
+            #                     children=[
+            #                         html.Img(
+            #                             id={'type': 'image', 'index': i}, 
+            #                             src=img_src,
+            #                             style={'flex': '1 0 27%', 'margin': '5px'}
+            #                         )
+            #                     ],
+            #                     id={'type': 'graph-container', 'index': i, 'columns': str(selected_cols)},  # Store columns ID
+            #                     style={'cursor': 'pointer'},  # Indicate clickability
+            #                     n_clicks=0  # Track clicks
+            #                 )
+            #             )
 
                     
-                    ### TO-DO: Add second visualisation here ###
+            ### TO-DO: Add second visualisation here ###
 
 
-                    # Return all Graph components inside a flexbox container
-                    return (
-                        html.Div([
-                            html.H5(f'Uploaded File: {filename}'),
-                            dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
-                        ]),
-                        html.Div(
-                            children=graph_components,
-                            style={
-                                'display': 'flex',
-                                'flexWrap': 'wrap',
-                                'justifyContent': 'space-around',
-                                'margin': '5px'
-                            }
-                        )
-                    )   
+            # Return all Graph components inside a flexbox container
+            return (
+                html.Div([
+                    html.H5(f'Uploaded File: {filename}'),
+                    dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
+                ]),
+                html.Div(
+                    children=graph_components,
+                    style={
+                        'display': 'flex',
+                        'flexWrap': 'wrap',
+                        'justifyContent': 'space-around',
+                        'margin': '5px'
+                    }
+                )
+            )   
 
 # # Callback to choose which recommendations to display
 # @app.callback(
