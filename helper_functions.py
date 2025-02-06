@@ -66,7 +66,6 @@ def create_styled_matplotlib_figure(fig):
     ax.spines['left'].set_color('#AAB8C2')
     return fig
 
-
 def fig_to_base64(fig):
     # Convert a Matplotlib figure to a base64-encoded PNG
     buf = io.BytesIO()
@@ -86,13 +85,13 @@ def fix_lux_code(lux_code):
     return fixed_code
 
 def extract_vis_columns(visualisation):
-    extracted_columns = ()
+    extracted_columns = []
     # Convert Vis object to string and extract x and y column names
     vis_str = str(visualisation)
     match = re.search(r'x: ([^,]+), y: ([^)]+)', vis_str)
     if match:
         x_col, y_col = match.groups()
-        extracted_columns = (x_col.strip(), y_col.strip())
+        extracted_columns = [x_col.strip(), y_col.strip()]
     return extracted_columns
 
 def parse_vis_string(vis_str):

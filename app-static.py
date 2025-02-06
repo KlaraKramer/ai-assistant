@@ -15,6 +15,7 @@ import numpy as np
 
 from helper_functions import *
 from outlier_isolation_forest import *
+from duplicate_detection import *
 from classes.vis import Vis
 from classes.graph_component import Graph_component
 
@@ -28,17 +29,23 @@ matplotlib.use('Agg')
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
-# Global variable to keep track of progress
+# Global variables to keep track of progress
 stage = 'data-loading'
+step = 0
 
-# Global variable to store the uploaded DataFrame
+# Global variables to store the original uploaded DataFrame and the current state of it
 uploaded_df = None
+current_df = None
 
 # Global variable to store the name of the file currently being used
 file_name = None
 
-# Global variable to store Lux Vis objects and the indices corresponding to the figures they are displayed in
-vis_objects = {}
+# Global variable to store Vis objects, including the indices corresponding to the figures they are displayed in
+vis_objects = []
+
+# Global variable to store components of the various sections of the pipeline
+duplicate_components = []
+outlier_components = []
 
 # Global variable to store the n_clicks_list for figures
 figure_clicks = []
@@ -73,8 +80,8 @@ progress_bar = html.Div(
         dbc.Nav(
             [
                 dbc.NavLink('Data loading', href='#output-data-upload', active='exact', id='progress-load', style={'background-color': 'red', 'color': 'white'}),
-                dbc.NavLink('Duplicate removal', href='#lux-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
-                dbc.NavLink('Outlier handling', href='#outlier', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Duplicate removal', href='#duplicate-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Outlier handling', href='#outlier-output', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
             ],
             vertical=True,
             pills=True,
@@ -100,42 +107,39 @@ dashboard = html.Div(id='dashboard', children=[
             },
         ),
 
-        # Placeholder for uploaded data and visualisations
+        # Placeholder for uploaded data and initial visualisations
         html.Div(id='output-data-upload', className='my-4'),
 
+        dbc.Button(
+            'Start Data Engineering Process',
+            id='start-button',
+            className='btn btn-success',
+            style={'display': 'none'}
+        ),
+
         html.Div([
-            # # Button to trigger Lux recommendations
-            # dbc.Button(
-            #     'Show Recommendations', 
-            #     id='show-recs', 
-            #     color='primary', 
-            #     className='mt-2'
-            # ),
-            # # Dropdown to choose recommendation option (initially hidden)
-            # dcc.Dropdown(
-            #     placeholder='Select a recommendation option', 
-            #     id='rec-dropdown',
-            #     style={'display': 'none'}  # Initially hidden
-            # ),
             # html.Div(id='rec-output-container', style={'display': 'none'}),
-            html.Div(id='lux-output', className='mt-4'),
-            html.Div(id='vis-selection-output'), # , style={'display': 'none'}
-            dbc.Button(
-                'Enhance',
-                id='enhance-button',
-                className='btn btn-success',
-                style={'display': 'none'}
-            ),
-            html.Div(id='enhanced-output', className='mt-4'),
+            html.Div(id='duplicate-output', className='mt-4'),
+            # html.Div(id='vis-selection-output'),
+            # dbc.Button(
+            #     'Enhance',
+            #     id='enhance-button',
+            #     className='btn btn-success',
+            #     style={'display': 'none'}
+            # ),
+            # html.Div(id='enhanced-output', className='mt-4'),
             dbc.Button(
                 'Finish Duplicate Removal',
                 id='duplicate-end-btn',
-                className='btn btn-success'
+                className='btn btn-success',
+                style={'display': 'none'}
             ),
+            html.Div(id='outlier-output', className='mt-4'),
             dbc.Button(
                 'Finish Outlier Handling',
                 id='outlier-end-btn',
-                className='btn btn-success'
+                className='btn btn-success',
+                style={'display': 'none'}
             ),
         ])
     ]) # style={'justify': 'center', 'align': 'center'})
@@ -151,20 +155,24 @@ app.layout = dbc.Container([
 # Callback to handle the file upload
 @app.callback(
     [Output(component_id='output-data-upload', component_property='children'),
-     Output(component_id='lux-output', component_property='children')],
+    Output(component_id='start-button', component_property='style')],
     [Input(component_id='upload-data', component_property='contents')],
     [State(component_id='upload-data', component_property='filename')],
     prevent_initial_call=True
 )
 def update_ui(contents, filename):
     global uploaded_df
+    global current_df
     global stage
+    global step
     global vis_objects
     global file_name
+    global duplicate_components
+    global outlier_components
 
     # If no data has been uploaded yet
     if contents is None:
-        return html.Div('Unsupported file type.'), html.Div('No recommendations available. Upload data first.')
+        return html.Div('Unsupported file type.'), {'display': 'block'}#, html.Div('No recommendations available. Upload data first.')
 
     # Handle file upload (uploading data)
     else:
@@ -172,15 +180,22 @@ def update_ui(contents, filename):
         uploaded_df = parse_contents(contents, filename)
         file_name = filename
         if uploaded_df is not None:
-            stage = 'duplicate-removal'
+            step += 1
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
+            current_df = uploaded_df
+            if 'unnamed_0' in current_df.columns:
+                current_df = current_df.drop('unnamed_0', axis=1)
             graph_components = []
+            # Reset global variables to empty visualisation sections
+            vis_objects = []
+            duplicate_components = []
+            outlier_components = []
 
             # Display the first recommended visualisation
-            vis1 = Vis(len(vis_objects), uploaded_df)
-            # Populate vis_objects dictionary for referring back to the visualisations
-            vis_objects[vis1.id] = vis1.lux_vis
+            vis1 = Vis(len(vis_objects), current_df)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis1)
             # Append the graph, wrapped in a Div to track clicks, to graph_components
             graph1 = Graph_component(vis1)
             if graph1.div is not None:
@@ -188,120 +203,209 @@ def update_ui(contents, filename):
             else:
                 print("No recommendations available. Please upload data first.")
 
-                    
-            ### TO-DO: Add second visualisation here ###
+            # Display the second recommended visualisation
+            vis2 = Vis(len(vis_objects), current_df, rec_group=1)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis2)
+            # Append the graph, wrapped in a Div to track clicks, to graph_components
+            graph2 = Graph_component(vis2)
+            if graph2.div is not None:
+                graph_components.append(graph2.div)
+            else:
+                print("No recommendations available. Please upload data first.")
 
-
-            # Return all Graph components inside a flexbox container
+            # Return all components inside a flexbox container
             return (
                 html.Div([
                     html.H5(f'Uploaded File: {filename}'),
-                    dbc.Table.from_dataframe(uploaded_df.head(), striped=True, bordered=True, hover=True)
-                ]),
-                html.Div(
-                    children=graph_components,
-                    style={
-                        'display': 'flex',
-                        'flexWrap': 'wrap',
-                        'justifyContent': 'space-around',
-                        'margin': '5px'
-                    }
-                )
-            )   
-
-# Callback to handle graph clicks
+                    dbc.Table.from_dataframe(current_df.head(), striped=True, bordered=True, hover=True),
+                    html.Div(
+                        children=graph_components,
+                        style={
+                            'display': 'flex',
+                            'flexWrap': 'wrap',
+                            'justifyContent': 'space-around',
+                            'margin': '5px'
+                        }
+                    )
+                ]), 
+                {'display': 'block'}
+            )
+            
+# Callback to handle updates within the 'duplicate-removal' stage
 @app.callback(
-    [Output(component_id='vis-selection-output', component_property='children'),
-     Output(component_id='vis-selection-output', component_property='style'),
-     Output(component_id='enhance-button', component_property='style')],
-    [Input(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='n_clicks')],
-    [State(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='id')],
+    [Output(component_id='duplicate-output', component_property='children')],
+    [Input(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='value'),
+     Input(component_id='start-button', component_property='n_clicks')],
     prevent_initial_call=True
 )
-def handle_graph_click(n_clicks_list, component_ids):
-    global figure_clicks
-    global selected_columns
-    global selected_id
-    # Find which graph was clicked by finding the difference between the global figure_clicks list and the new n_clicks_list
-    if len(figure_clicks) == len(n_clicks_list):
-        arr1 = np.array(figure_clicks)
-        arr2 = np.array(n_clicks_list)
-        clicked_index = int(np.where(arr1 != arr2)[0][-1])
-
-        # Extract the selected columns, and display them to the console and the dashboard user
-        selected_columns = component_ids[clicked_index]['columns']
-        selected_id = component_ids[clicked_index]['index']
-        print('Selected Columns:', selected_columns)
-        # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
-        figure_clicks = n_clicks_list
-        return f'Selected Graph Columns: {selected_columns}', {'display': 'block'}, {'display': 'block'}     
-
-    # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
-    figure_clicks = n_clicks_list
-    return dash.no_update, {'display': 'none'}, dash.no_update
-
-# Callback to handle 'Enhance' button clicks
-@app.callback(
-    Output(component_id='enhanced-output', component_property='children'),
-    Input(component_id='enhance-button', component_property='n_clicks')
-)
-def handle_enhance_click(n_clicks):
-    # global selected_columns
-    global uploaded_df
+def update_ui(drop_value, n_clicks):
+    global current_df
+    global stage
+    global step
     global vis_objects
-    global selected_id
+    global duplicate_components
 
-    if n_clicks and uploaded_df is not None:
-        # Extract the selected visualisation from the stored vis_objects and specify Lux intent
-        vis = vis_objects[selected_id]
-        uploaded_df.intent = vis
-        graph_components = []
 
-        # Display the first recommended visualisation
-        vis1 = Vis(len(vis_objects), uploaded_df)
-        # Populate vis_objects dictionary for referring back to the visualisations
-        vis_objects[vis1.id] = vis1.lux_vis
-        # Append the graph, wrapped in a Div to track clicks, to graph_components
-        graph1 = Graph_component(vis1)
-        if graph1.div is not None:
-            graph_components.append(graph1.div)
+    ### TO-DO: Add useful logic to handle updating both visualisations and adding them to duplicate_components ###
+    # -> drop_value is the action chosen by the user
+    if n_clicks > 0 and current_df is not None:
+        stage = 'duplicate-removal'
+        step += 1
+        # First render
+        if not drop_value:
+            # Access the last visualisation rendered on the left (second-to-last in vis_objects)
+            left_previous = vis_objects[-2]
+            left_df = current_df
+            print(left_previous.columns)
+            left_df.intent = left_previous.columns
+            # Display the first recommended visualisation
+            vis1 = Vis(len(vis_objects), left_df)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis1)
+            # Append the graph, wrapped in a Div to track clicks, to duplicate_components
+            graph1 = Graph_component(vis1)
+            if graph1.div is not None:
+                duplicate_components.append(graph1.div)
+            else:
+                print("No recommendations available. Please upload data first.")
+
+            # Access the last visualisation rendered on the right (second-to-last in vis_objects, since a new vis was added since)
+            right_previous = vis_objects[-2]
+
+            ## TO-DO: Add second visualisation here ###
+            dup_df = detect_duplicates(current_df)
+            dup_df.intent = ["Duplicate"]
+            # Display the second visualisation
+            vis2 = Vis(len(vis_objects), dup_df)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis2)
+            # Append the graph, wrapped in a Div to track clicks, to duplicate_components
+            graph2 = Graph_component(vis2)
+            if graph2.div is not None:
+                duplicate_components.append(graph2.div)
+            else:
+                print("No recommendations available. Please upload data first.")
+
+        # Previous duplicate removal steps have taken place
         else:
-            print("No recommendations available. Please upload data first.")
+            pass
 
-
-        ### TO-DO: Add second visualisation here ###
-
-
-        # Return all Graph components inside a flexbox container
-        return (
+    # Return all Graph components inside a flexbox container
+    return [
+        html.Div([
             html.Div(
-                children=graph_components,
+                children=duplicate_components,
                 style={
                     'display': 'flex',
                     'flexWrap': 'wrap',
                     'justifyContent': 'space-around',
                     'margin': '5px'
                 }
+            ),
+            dcc.Dropdown(
+                placeholder='Select an action to take', 
+                id={'type': 'duplicate-removal', 'index': step}
             )
-        )
+        ])
+    ]
 
-    else:
-        return dash.no_update
+# # Callback to handle graph clicks
+# @app.callback(
+#     [Output(component_id='vis-selection-output', component_property='children'),
+#      Output(component_id='vis-selection-output', component_property='style'),
+#      Output(component_id='enhance-button', component_property='style')],
+#     [Input(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='n_clicks')],
+#     [State(component_id={'type': 'graph-container', 'index': ALL, 'columns': ALL}, component_property='id')],
+#     prevent_initial_call=True
+# )
+# def handle_graph_click(n_clicks_list, component_ids):
+#     global figure_clicks
+#     global selected_columns
+#     global selected_id
+#     # Find which graph was clicked by finding the difference between the global figure_clicks list and the new n_clicks_list
+#     if len(figure_clicks) == len(n_clicks_list):
+#         arr1 = np.array(figure_clicks)
+#         arr2 = np.array(n_clicks_list)
+#         clicked_index = int(np.where(arr1 != arr2)[0][-1])
+
+#         # Extract the selected columns, and display them to the console and the dashboard user
+#         selected_columns = component_ids[clicked_index]['columns']
+#         selected_id = component_ids[clicked_index]['index']
+#         print('Selected Columns:', selected_columns)
+#         # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
+#         figure_clicks = n_clicks_list
+#         return f'Selected Graph Columns: {selected_columns}', {'display': 'block'}, {'display': 'block'}     
+
+#     # Reset figure_clicks to prepare for the identification of the next click to be added to n_clicks_list
+#     figure_clicks = n_clicks_list
+#     return dash.no_update, {'display': 'none'}, dash.no_update
+
+# # Callback to handle 'Enhance' button clicks
+# @app.callback(
+#     Output(component_id='enhanced-output', component_property='children'),
+#     Input(component_id='enhance-button', component_property='n_clicks')
+# )
+# def handle_enhance_click(n_clicks):
+#     # global selected_columns
+#     global uploaded_df
+#     global vis_objects
+#     global selected_id
+
+#     if n_clicks and uploaded_df is not None:
+#         # Extract the selected visualisation from the stored vis_objects and specify Lux intent
+#         vis = vis_objects[selected_id]
+#         uploaded_df.intent = vis
+#         graph_components = []
+
+#         # Display the first recommended visualisation
+#         vis1 = Vis(len(vis_objects), uploaded_df)
+#         # Populate vis_objects dictionary for referring back to the visualisations
+#         vis_objects[vis1.id] = vis1.lux_vis
+#         # Append the graph, wrapped in a Div to track clicks, to graph_components
+#         graph1 = Graph_component(vis1)
+#         if graph1.div is not None:
+#             graph_components.append(graph1.div)
+#         else:
+#             print("No recommendations available. Please upload data first.")
+
+
+#         ### TO-DO: Add second visualisation here ###
+
+
+#         # Return all Graph components inside a flexbox container
+#         return (
+#             html.Div(
+#                 children=graph_components,
+#                 style={
+#                     'display': 'flex',
+#                     'flexWrap': 'wrap',
+#                     'justifyContent': 'space-around',
+#                     'margin': '5px'
+#                 }
+#             )
+#         )
+
+#     else:
+#         return dash.no_update
 
 # Callback to update progress
 @app.callback(
     [Output(component_id='progress-load', component_property='style'),
      Output(component_id='progress-duplicate', component_property='style'),
-     Output(component_id='progress-outlier', component_property='style')],
+     Output(component_id='progress-outlier', component_property='style'),
+     Output(component_id='duplicate-end-btn', component_property='style'),
+     Output(component_id='outlier-end-btn', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
      Input(component_id='outlier-end-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
-def update_progress_duplicate(contents, click_dup, click_out):
+def update_progress(contents, click_dup, click_out):
     ctx = dash.callback_context
-    # Default colours
+    # Default colours and display values
     load_colour, dup_colour, out_colour = 'red', 'red', 'red'
+    dup_style, out_style = {'display': 'block'}, {'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -309,21 +413,29 @@ def update_progress_duplicate(contents, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'red'
+        dup_style = {'display': 'block'}
+        out_style = {'display': 'block'}
     if 'outlier-end-btn' in changed_id:
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
+        dup_style = {'display': 'block'}
+        out_style = {'display': 'block'}
     
     # If a new file is uploaded, reset dup_colour and out_colour to 'red'
     if ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
         load_colour = 'green'
         dup_colour = 'red'
         out_colour = 'red'
+        dup_style = {'display': 'block'}
+        out_style = {'display': 'none'}
     
     return (
         {'background-color': load_colour, 'color': 'white'},
         {'background-color': dup_colour, 'color': 'white'},
-        {'background-color': out_colour, 'color': 'white'}
+        {'background-color': out_colour, 'color': 'white'},
+        dup_style,
+        out_style
     )
 
 

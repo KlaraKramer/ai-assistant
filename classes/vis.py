@@ -6,7 +6,7 @@ from helper_functions import *
 
 class Vis:
 
-    def __init__(self, id, df):
+    def __init__(self, id, df, rec_group=0, num_rec=0):
         self.id = id
         self.columns = None
         self.output_type = None
@@ -19,12 +19,18 @@ class Vis:
             # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
             rec_options = [key for key in recommendations]
             # Access first recommendation group
-            self.rec_type = rec_options[0]
+            if len(rec_options) > rec_group:
+                self.rec_type = rec_options[rec_group]
+            else:
+                self.rec_type = rec_options[0]
             self.selected_recommendations = recommendations[self.rec_type]
 
             # Plot figure
             if self.selected_recommendations:
-                self.lux_vis = self.selected_recommendations[0]
+                if len(self.selected_recommendations) > num_rec:
+                    self.lux_vis = self.selected_recommendations[num_rec]
+                else:
+                    self.lux_vis = self.selected_recommendations[0]
                 # Get the relevant column names
                 self.columns = extract_vis_columns(self.lux_vis)
                 
