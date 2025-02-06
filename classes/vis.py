@@ -14,8 +14,11 @@ class Vis:
         self.figure = None
 
         # Generate recommendations and store the resulting dictionary explicitly
+        if 'id' in df.columns:
+            df = df.drop('id', axis=1)
         recommendations = df.recommendation
         if recommendations:
+            # print("--------recommendations--------:\n", recommendations)
             # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
             rec_options = [key for key in recommendations]
             # Access first recommendation group

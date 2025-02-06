@@ -44,7 +44,9 @@ file_name = None
 vis_objects = []
 
 # Global variable to store components of the various sections of the pipeline
-duplicate_components = []
+# duplicate_components = []
+dups_count = 0
+duplicate_div = None
 outlier_components = []
 
 # Global variable to store the n_clicks_list for figures
@@ -167,7 +169,7 @@ def update_ui(contents, filename):
     global step
     global vis_objects
     global file_name
-    global duplicate_components
+    # global duplicate_components
     global outlier_components
 
     # If no data has been uploaded yet
@@ -189,7 +191,7 @@ def update_ui(contents, filename):
             graph_components = []
             # Reset global variables to empty visualisation sections
             vis_objects = []
-            duplicate_components = []
+            # duplicate_components = []
             outlier_components = []
 
             # Display the first recommended visualisation
@@ -237,27 +239,54 @@ def update_ui(contents, filename):
     [Output(component_id='duplicate-output', component_property='children')],
     [Input(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='value'),
      Input(component_id='start-button', component_property='n_clicks')],
+    # [State(component_id='duplicate-output', component_property='children')],
     prevent_initial_call=True
 )
-def update_ui(drop_value, n_clicks):
+def update_ui(drop_value, n_clicks): #, existing_children
     global current_df
     global stage
     global step
     global vis_objects
-    global duplicate_components
+    # global duplicate_components
+    global duplicate_div
+    global dups_count
 
+    # if existing_children is not None:
+    #     # print("---------------existing_children: ", existing_children, "---------------")
+    #     existing_props = existing_children['props']
+    #     existing_children = existing_props['children']
 
-    ### TO-DO: Add useful logic to handle updating both visualisations and adding them to duplicate_components ###
-    # -> drop_value is the action chosen by the user
+    selected_option = ''
+    duplicate_components = []
     if n_clicks > 0 and current_df is not None:
         stage = 'duplicate-removal'
         step += 1
-        # First render
-        if not drop_value:
-            # Access the last visualisation rendered on the left (second-to-last in vis_objects)
-            left_previous = vis_objects[-2]
+        # Access the last visualisation rendered on the left (second-to-last in vis_objects)
+        left_previous = vis_objects[-2]
+
+        if drop_value == 'highlight':
+            selected_option = 'Highlight duplicated rows'
+            # Detect and show duplicates
+            highlight_df, highlight_count = detect_duplicates(current_df, keep=False)
+            highlight_df = highlight_df[highlight_df.duplicate != False]
+            new_div = html.Div([
+                html.P(f'Selected action: {selected_option}'),
+                html.P(f'{dups_count} duplicated rows were detected'),
+                dbc.Table.from_dataframe(highlight_df, striped=True, bordered=True, hover=True),
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'duplicate-removal', 'index': step},
+                    options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                )
+            ])
+            duplicate_div.append(new_div)
+            print("**********************************duplicate_div******************************\n", len(duplicate_div))
+            return [html.Div(children=duplicate_div)]
+        
+        elif drop_value == 'delete':
+            selected_option = 'Delete duplicates'
+            current_df = current_df[current_df.duplicate != True]
             left_df = current_df
-            print(left_previous.columns)
             left_df.intent = left_previous.columns
             # Display the first recommended visualisation
             vis1 = Vis(len(vis_objects), left_df)
@@ -268,16 +297,15 @@ def update_ui(drop_value, n_clicks):
             if graph1.div is not None:
                 duplicate_components.append(graph1.div)
             else:
-                print("No recommendations available. Please upload data first.")
+                print('No recommendations available. Please upload data first.')
 
-            # Access the last visualisation rendered on the right (second-to-last in vis_objects, since a new vis was added since)
-            right_previous = vis_objects[-2]
+            # Detect and visualise duplicates
+            current_df, dups_count = detect_duplicates(current_df)
+            right_df = current_df
 
-            ## TO-DO: Add second visualisation here ###
-            dup_df = detect_duplicates(current_df)
-            dup_df.intent = ["Duplicate"]
+            right_df.intent = ['duplicate']
             # Display the second visualisation
-            vis2 = Vis(len(vis_objects), dup_df)
+            vis2 = Vis(len(vis_objects), right_df)
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis2)
             # Append the graph, wrapped in a Div to track clicks, to duplicate_components
@@ -285,30 +313,85 @@ def update_ui(drop_value, n_clicks):
             if graph2.div is not None:
                 duplicate_components.append(graph2.div)
             else:
-                print("No recommendations available. Please upload data first.")
+                print('No recommendations available. Please upload data first.')
+            # Return all components inside a flexbox container
+            new_div = html.Div([
+                html.P(f'Selected action: {selected_option}'),
+                html.P(f'{dups_count} duplicated rows were detected'),
+                html.Div(
+                    children=duplicate_components,
+                    style={
+                        'display': 'flex',
+                        'flexWrap': 'wrap',
+                        'justifyContent': 'space-around',
+                        'margin': '5px'
+                    }
+                ),
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'duplicate-removal', 'index': step},
+                    options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                ),
+                html.P(f'{selected_option}')
+            ])
+            duplicate_div.append(new_div)
+            print("**********************************duplicate_div******************************\n", len(duplicate_div))
+            return [html.Div(children=duplicate_div)]
 
-        # Previous duplicate removal steps have taken place
+        # First render
         else:
-            pass
+            left_df = current_df
+            left_df.intent = left_previous.columns
+            # Display the first recommended visualisation
+            vis1 = Vis(len(vis_objects), left_df)              
 
-    # Return all Graph components inside a flexbox container
-    return [
-        html.Div([
-            html.Div(
-                children=duplicate_components,
-                style={
-                    'display': 'flex',
-                    'flexWrap': 'wrap',
-                    'justifyContent': 'space-around',
-                    'margin': '5px'
-                }
-            ),
-            dcc.Dropdown(
-                placeholder='Select an action to take', 
-                id={'type': 'duplicate-removal', 'index': step}
-            )
-        ])
-    ]
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis1)
+            # Append the graph, wrapped in a Div to track clicks, to duplicate_components
+            graph1 = Graph_component(vis1)
+            if graph1.div is not None:
+                duplicate_components.append(graph1.div)
+            else:
+                print('No recommendations available. Please upload data first.')
+
+            # Detect and visualise duplicates
+            current_df, dups_count = detect_duplicates(current_df)
+            right_df = current_df
+
+            right_df.intent = ['duplicate']
+            # Display the second visualisation
+            vis2 = Vis(len(vis_objects), right_df)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis2)
+            # Append the graph, wrapped in a Div to track clicks, to duplicate_components
+            graph2 = Graph_component(vis2)
+            if graph2.div is not None:
+                duplicate_components.append(graph2.div)
+            else:
+                print('No recommendations available. Please upload data first.')
+            # Return all components inside a flexbox container
+            duplicate_div = [
+                html.Div([
+                    html.P(f'{dups_count} duplicated rows were detected'),
+                    html.Div(
+                        children=duplicate_components,
+                        style={
+                            'display': 'flex',
+                            'flexWrap': 'wrap',
+                            'justifyContent': 'space-around',
+                            'margin': '5px'
+                        }
+                    ),
+                    dcc.Dropdown(
+                        placeholder='Select an action to take', 
+                        id={'type': 'duplicate-removal', 'index': step},
+                        options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                    ),
+                    html.P(f'{selected_option}')
+                ])
+            ]
+            print("**********************************duplicate_div******************************\n", len(duplicate_div))
+            return duplicate_div
 
 # # Callback to handle graph clicks
 # @app.callback(

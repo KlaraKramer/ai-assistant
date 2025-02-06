@@ -1,11 +1,14 @@
-def detect_duplicates(df):
+def detect_duplicates(df, keep='first'):
+    # Reset previous detection steps
+    if 'duplicate' in df.columns:
+        df = df.drop('duplicate', axis=1)
     df_copy = df
     # Remove interfering columns
-    if "Id" in df_copy.columns:
-        df_copy = df_copy.drop("Id", axis=1)
-    if "Unnamed: 0" in df_copy.columns:
-        df_copy = df_copy.drop("Unnamed: 0", axis=1)
+    if 'id' in df_copy.columns:
+        df_copy = df_copy.drop('id', axis=1)
     # Add a new column 
-    df["Duplicate"] = df_copy.duplicated()
-    return df
+    df['duplicate'] = df_copy.duplicated(keep=keep)
+    # Count the number of duplicates detected
+    dups_count = df['duplicate'].value_counts().get(True, 0)
+    return df, dups_count
 
