@@ -293,7 +293,7 @@ def render_duplicates(n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
-            
+
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
@@ -327,8 +327,8 @@ def update_duplicates(drop_value, n_clicks):
     graph_list = []
     if n_clicks > 0 and current_df is not None:
         step += 1
-        # Access the last visualisation rendered on the left (second-to-last in vis_objects)
-        left_previous = vis_objects[-2]
+        # Access the last visualisation rendered on the right (human view)
+        human_previous = vis_objects[-1]
 
         if 'highlight' == drop_value[-1]:
             selected_option = 'Highlight duplicated rows'
@@ -351,10 +351,10 @@ def update_duplicates(drop_value, n_clicks):
         elif 'delete' == drop_value[-1]:
             selected_option = 'Delete duplicates'
             current_df = current_df[current_df.duplicate != True]
-            left_df = current_df
-            left_df.intent = left_previous.columns
-            # Display the first recommended visualisation
-            vis1 = Vis(len(vis_objects), left_df)
+         
+            ## Machine View ##
+            # Display a parallel coordinates plot
+            vis1 = Vis(len(vis_objects), current_df, machine_view=True)
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis1)
             # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -364,11 +364,11 @@ def update_duplicates(drop_value, n_clicks):
             else:
                 print('No recommendations available. Please upload data first.')
 
+            ## Human View ##
             # Detect and visualise duplicates
             current_df, dups_count = detect_duplicates(current_df)
             right_df = current_df
-
-            right_df.intent = ['duplicate']
+            right_df.intent = [human_previous.columns]
             # Display the second visualisation
             vis2 = Vis(len(vis_objects), right_df)
             # Populate vis_objects list for referring back to the visualisations
@@ -379,6 +379,7 @@ def update_duplicates(drop_value, n_clicks):
                 graph_list.append(graph2.div)
             else:
                 print('No recommendations available. Please upload data first.')
+
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
@@ -414,17 +415,16 @@ def render_outliers(n_clicks):
 
     selected_option = ''
     graph_list = []
+    # First render
     if n_clicks > 0 and current_df is not None:
         stage = 'outlier-handling'
         step += 1
-        # Access the last visualisation rendered on the left (second-to-last in vis_objects)
-        left_previous = vis_objects[-2]
-        # First render
-        left_df = current_df
-        left_df.intent = left_previous.columns
-        # Display the first recommended visualisation
-        vis1 = Vis(len(vis_objects), left_df)              
-
+        # Access the last visualisation rendered on the right (human view)
+        human_previous = vis_objects[-1]
+        
+        ## Machine View ##
+        # Display a parallel coordinates plot
+        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis1)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -434,9 +434,9 @@ def render_outliers(n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        ## Human View ##
         # Detect and visualise outliers
-        outlier_df, outlier_count = train_isolation_forest(current_df, intent=left_previous.columns)
-
+        outlier_df, outlier_count = train_isolation_forest(current_df, intent=human_previous.columns)
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), outlier_df)
         # Populate vis_objects list for referring back to the visualisations
@@ -447,6 +447,7 @@ def render_outliers(n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
+
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
