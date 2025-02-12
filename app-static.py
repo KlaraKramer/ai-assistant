@@ -44,10 +44,8 @@ file_name = None
 vis_objects = []
 
 # Global variable to store components of the various sections of the pipeline
-duplicate_components = []
 dups_count = 0
-# duplicate_div = None
-# outlier_components = []
+outlier_count = 0
 
 # Global variable to store the n_clicks_list for figures
 figure_clicks = []
@@ -149,6 +147,11 @@ dashboard = html.Div(id='dashboard', children=[
             ),
             html.Div(
                 id='outlier-output', 
+                className='mt-4',
+                children=[]
+            ),
+            html.Div(
+                id='outlier-output-1', 
                 className='mt-4',
                 children=[]
             ),
@@ -344,8 +347,6 @@ def update_duplicates(drop_value, n_clicks):
         # Access the last visualisation rendered on the left (second-to-last in vis_objects)
         left_previous = vis_objects[-2]
 
-        print("*************************drop_value: ", drop_value, "******************************")
-
         if 'highlight' == drop_value[-1]:
             selected_option = 'Highlight duplicated rows'
             # Detect and show duplicates
@@ -420,6 +421,76 @@ def update_duplicates(drop_value, n_clicks):
             return dash.no_update
     else:
         return dash.no_update
+
+
+# Callback to handle the first render within the 'outlier-handling' stage
+@app.callback(
+    [Output(component_id='outlier-output', component_property='children')],
+    [Input(component_id='duplicate-end-btn', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def render_outliers(n_clicks):
+    global current_df
+    global stage
+    global step
+    global vis_objects
+    global outlier_count
+
+    selected_option = ''
+    graph_list = []
+    if n_clicks > 0 and current_df is not None:
+        stage = 'outlier-handling'
+        step += 1
+        # Access the last visualisation rendered on the left (second-to-last in vis_objects)
+        left_previous = vis_objects[-2]
+        # First render
+        left_df = current_df
+        left_df.intent = left_previous.columns
+        # Display the first recommended visualisation
+        vis1 = Vis(len(vis_objects), left_df)              
+
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis1)
+        # Append the graph, wrapped in a Div to track clicks, to graph_list
+        graph1 = Graph_component(vis1)
+        if graph1.div is not None:
+            graph_list.append(graph1.div)
+        else:
+            print('No recommendations available. Please upload data first.')
+
+        # Detect and visualise outliers
+        outlier_df, outlier_count = train_isolation_forest(current_df, intent=left_previous.columns)
+
+        # Display the second visualisation
+        vis2 = Vis(len(vis_objects), outlier_df)
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis2)
+        # Append the graph, wrapped in a Div to track clicks, to graph_list
+        graph2 = Graph_component(vis2)
+        if graph2.div is not None:
+            graph_list.append(graph2.div)
+        else:
+            print('No recommendations available. Please upload data first.')
+        # Return all components inside a flexbox container
+        new_div = html.Div(children=[
+                html.P(f'{outlier_count} outlier values were detected'),
+                html.Div(
+                    children=graph_list,
+                    style={
+                        'display': 'flex',
+                        'flexWrap': 'wrap',
+                        'justifyContent': 'space-around',
+                        'margin': '5px'
+                    }
+                ),
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'outlier-handling', 'index': step},
+                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the highlighted outliers'}
+                ),
+                html.P(f'{selected_option}')
+            ])
+        return [new_div]
 
 
 # # Callback to handle graph clicks
