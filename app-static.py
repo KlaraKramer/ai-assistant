@@ -592,6 +592,8 @@ def update_progress(contents, click_dup, click_out):
         out_style
     )
 
+# Expose the Flask server
+server = app.server
 
 # Run the Dash app
 if __name__ == '__main__':
