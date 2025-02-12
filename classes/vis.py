@@ -88,6 +88,11 @@ class Vis:
                     fig = plt.gcf()
                     plt.draw()
 
+                    # Adjust layout to prevent legend cutoff
+                    plt.tight_layout()  # Auto-adjust layout to fit everything
+                    # Manually adjust legend if needed
+                    fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
+
                     # ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
 
                     # Try to convert Matplotlib figure to Plotly
