@@ -12,7 +12,7 @@ class Graph_component:
                     dcc.Graph(
                         id={'type': 'dynamic-graph', 'index': vis.id},
                         figure=vis.figure,
-                        style={'width': '40%', 'boxSizing': 'border-box'} # 'padding': '5px', 
+                        style={'width': '45%', 'boxSizing': 'border-box'} # 'padding': '5px', 
                     )
                 ],
                 id={'type': 'graph-container', 'index': vis.id, 'columns': str(vis.columns)},  # Store columns in ID
@@ -27,7 +27,7 @@ class Graph_component:
                     html.Img(
                         id={'type': 'image', 'index': vis.id}, 
                         src=vis.figure,
-                        style={'width': '40%', 'boxSizing': 'border-box'} # 'padding': '5px', 
+                        style={'width': '45%', 'boxSizing': 'border-box'} # 'padding': '5px', 
                     )
                 ],
                 id={'type': 'graph-container', 'index': vis.id, 'columns': str(vis.columns)},  # Store columns ID

@@ -46,14 +46,14 @@ vis_objects = []
 dups_count = 0
 outlier_count = 0
 
-# Global variable to store the n_clicks_list for figures
-figure_clicks = []
+# # Global variable to store the n_clicks_list for figures
+# figure_clicks = []
 
-# Global variable to store selected figure id
-selected_id = None
+# # Global variable to store selected figure id
+# selected_id = None
 
-# Global variable to store selected columns from clicking on a figure
-selected_columns = ()
+# # Global variable to store selected columns from clicking on a figure
+# selected_columns = ()
 
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
@@ -91,7 +91,7 @@ progress_bar = html.Div(
 
 dashboard = html.Div(id='dashboard', children=[
     dbc.Container([
-        html.H1('Visual Data Engineering', className='text-center my-4'),
+        html.H1('Interactive Visual Data Engineering', className='text-center my-4'),
 
         # File upload component
         dcc.Upload(
@@ -186,6 +186,8 @@ def update_ui(contents, filename):
     global step
     global vis_objects
     global file_name
+    global dups_count
+    global outlier_count
 
     # If no data has been uploaded yet
     if contents is None:
@@ -204,8 +206,10 @@ def update_ui(contents, filename):
             if 'unnamed_0' in current_df.columns:
                 current_df = current_df.drop('unnamed_0', axis=1)
             graph_components = []
-            # Reset global variable to empty visualisation storage
+            # Reset global variables
             vis_objects = []
+            dups_count = 0
+            outlier_count = 0
 
             ## Machine View ##
             # Display a parallel coordinates plot
