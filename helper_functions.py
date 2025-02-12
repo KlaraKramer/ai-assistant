@@ -128,7 +128,6 @@ def show_side_by_side(components):
         style={
             'display': 'flex',
             'justifyContent': 'space-between',
-            'width': '80%',
-            'margin': '5px'
+            'width': '80%'
         }
     )

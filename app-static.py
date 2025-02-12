@@ -187,8 +187,6 @@ def update_ui(contents, filename):
     global step
     global vis_objects
     global file_name
-    global duplicate_div
-    global outlier_components
 
     # If no data has been uploaded yet
     if contents is None:
@@ -207,14 +205,12 @@ def update_ui(contents, filename):
             if 'unnamed_0' in current_df.columns:
                 current_df = current_df.drop('unnamed_0', axis=1)
             graph_components = []
-            # Reset global variables to empty visualisation sections
+            # Reset global variable to empty visualisation storage
             vis_objects = []
-            # duplicate_components = []
-            duplicate_div = None
-            outlier_components = []
 
-            # Display the first recommended visualisation
-            vis1 = Vis(len(vis_objects), current_df)
+            ## Machine View ##
+            # Display a parallel coordinates plot
+            vis1 = Vis(len(vis_objects), current_df, machine_view=True)
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis1)
             # Append the graph, wrapped in a Div to track clicks, to graph_components
@@ -224,8 +220,9 @@ def update_ui(contents, filename):
             else:
                 print("No recommendations available. Please upload data first.")
 
-            # Display the second recommended visualisation
-            vis2 = Vis(len(vis_objects), current_df, rec_group=1)
+            ## Human View ##
+            # Display the first recommended visualisation
+            vis2 = Vis(len(vis_objects), current_df)
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis2)
             # Append the graph, wrapped in a Div to track clicks, to graph_components
@@ -262,17 +259,16 @@ def render_duplicates(n_clicks):
 
     selected_option = ''
     graph_list = []
+    # First render
     if n_clicks > 0 and current_df is not None:
         stage = 'duplicate-removal'
         step += 1
-        # Access the last visualisation rendered on the left (second-to-last in vis_objects)
-        left_previous = vis_objects[-2]
-        # First render
-        left_df = current_df
-        left_df.intent = left_previous.columns
-        # Display the first recommended visualisation
-        vis1 = Vis(len(vis_objects), left_df)              
-
+        # Access the last visualisation rendered on the right (human view)
+        human_previous = vis_objects[-1]
+        
+        ## Machine View ##
+        # Display a parallel coordinates plot
+        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis1)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -282,11 +278,11 @@ def render_duplicates(n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        ## Human View ##
         # Detect and visualise duplicates
         current_df, dups_count = detect_duplicates(current_df)
         right_df = current_df
-
-        right_df.intent = ['duplicate']
+        right_df.intent = [human_previous.columns]
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), right_df)
         # Populate vis_objects list for referring back to the visualisations
@@ -297,6 +293,7 @@ def render_duplicates(n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
+            
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
