@@ -3,12 +3,11 @@ from dash import dcc, html, Input, Output, State, ALL
 import dash_bootstrap_components as dbc
 import pandas as pd
 import matplotlib
-import matplotlib.pyplot as plt
 from matplotlib.cm import Set1
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import altair as alt
-import mpld3    
-from plotly.tools import mpl_to_plotly
+import mpld3
+from sklearn import set_config
+from sklearn.pipeline import Pipeline
 import sys
 import os
 import numpy as np
