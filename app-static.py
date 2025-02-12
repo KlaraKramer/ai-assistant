@@ -235,20 +235,13 @@ def update_ui(contents, filename):
             else:
                 print("No recommendations available. Please upload data first.")
 
-            # Return all components inside a flexbox container
+            # Return all components
+            graph_div = show_side_by_side(graph_components)
             return (
                 html.Div([
                     html.H5(f'Uploaded File: {filename}'),
                     dbc.Table.from_dataframe(current_df.head(), striped=True, bordered=True, hover=True),
-                    html.Div(
-                        children=graph_components,
-                        style={
-                            'display': 'flex',
-                            'flexWrap': 'wrap',
-                            'justifyContent': 'space-around',
-                            'margin': '5px'
-                        }
-                    )
+                    graph_div
                 ]), 
                 {'display': 'block'}
             )
@@ -304,18 +297,11 @@ def render_duplicates(n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
-        # Return all components inside a flexbox container
+        # Return all components
+        graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
                 html.P(f'{dups_count} duplicated rows were detected'),
-                html.Div(
-                    children=graph_list,
-                    style={
-                        'display': 'flex',
-                        'flexWrap': 'wrap',
-                        'justifyContent': 'space-around',
-                        'margin': '5px'
-                    }
-                ),
+                graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
@@ -396,19 +382,12 @@ def update_duplicates(drop_value, n_clicks):
                 graph_list.append(graph2.div)
             else:
                 print('No recommendations available. Please upload data first.')
-            # Return all components inside a flexbox container
+            # Return all components
+            graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
                 html.P(f'{dups_count} duplicated rows were detected'),
-                html.Div(
-                    children=graph_list,
-                    style={
-                        'display': 'flex',
-                        'flexWrap': 'wrap',
-                        'justifyContent': 'space-around',
-                        'margin': '5px'
-                    }
-                ),
+                graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
@@ -471,18 +450,11 @@ def render_outliers(n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
-        # Return all components inside a flexbox container
+        # Return all components
+        graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
                 html.P(f'{outlier_count} outlier values were detected'),
-                html.Div(
-                    children=graph_list,
-                    style={
-                        'display': 'flex',
-                        'flexWrap': 'wrap',
-                        'justifyContent': 'space-around',
-                        'margin': '5px'
-                    }
-                ),
+                graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},

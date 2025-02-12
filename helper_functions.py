@@ -9,6 +9,7 @@ from io import BytesIO
 import IPython.display as display
 from PIL import Image
 import plotly.express as px
+from dash import dcc, html
 
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath('./lux'))
@@ -120,3 +121,14 @@ def parse_vis_string(vis_str):
     if score is not None:
         vis.score = score
     return vis
+
+def show_side_by_side(components):
+    return html.Div(
+        children=components,
+        style={
+            'display': 'flex',
+            'justifyContent': 'space-between',
+            'width': '80%',
+            'margin': '5px'
+        }
+    )
