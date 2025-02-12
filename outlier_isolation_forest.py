@@ -39,10 +39,10 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
     yhat = iso.fit_predict(data_converted)
 
     # Apply predictions to the original DataFrame
-    data_original['Predicted Outlier'] = yhat == -1
+    data_original['outlier'] = yhat == -1
 
     # Count outliers
-    outlier_count = data_original['Predicted Outlier'].sum()
+    outlier_count = data_original['outlier'].sum()
 
     # # Convert back to LuxDataFrame
     # data_original = LuxDataFrame(data_original)

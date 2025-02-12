@@ -6,13 +6,14 @@ from helper_functions import *
 
 class Vis:
 
-    def __init__(self, id, df, rec_group=0, num_rec=0, machine_view=False):
+    def __init__(self, id, df, rec_group=0, num_rec=0, machine_view=False, enhance=None):
         self.id = id
         self.columns = None
         self.output_type = None
         self.lux_vis = None
         self.figure = None
         self.machine_view = machine_view
+        self.enhance = enhance
 
         if machine_view:
             # Display a parallel coordinates plot
@@ -35,16 +36,36 @@ class Vis:
             if recommendations:
                 # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
                 rec_options = [key for key in recommendations]
-                # Access first recommendation group
-                if len(rec_options) > rec_group:
-                    self.rec_type = rec_options[rec_group]
+                # print('****************************rec_options: ', rec_options, '**************************')
+                if 'Correlation' in rec_options:
+                    self.rec_type = 'Correlation'
+                elif 'Enhance' in rec_options:
+                    self.rec_type = 'Enhance'
                 else:
-                    self.rec_type = rec_options[0]
+                    if len(rec_options) > rec_group:
+                        # Access chosen recommendation group
+                        self.rec_type = rec_options[rec_group]
+                    else:
+                        # Access first recommendation group
+                        self.rec_type = rec_options[0]
                 self.selected_recommendations = recommendations[self.rec_type]
+                # print('****************************selected_recs: ', self.selected_recommendations, '*******************')
 
                 # Plot figure
                 if self.selected_recommendations:
-                    if len(self.selected_recommendations) > num_rec:
+                    if self.rec_type == 'Enhance' and self.enhance is not None:
+                        # Search self.selected_recommendations for the color attribute stored in self.enhance
+                        for rec in self.selected_recommendations:
+                            # Get the color column
+                            color_column = rec.get_attr_by_channel('color')
+                            # Get the column name
+                            if len(color_column) > 0:
+                                color_attribute = color_column[0].attribute
+                                # print('**************color attribute: ', color_attribute, '****************')
+                                if color_attribute == self.enhance:
+                                    self.lux_vis = rec
+                                    break                        
+                    elif len(self.selected_recommendations) > num_rec:
                         self.lux_vis = self.selected_recommendations[num_rec]
                     else:
                         self.lux_vis = self.selected_recommendations[0]

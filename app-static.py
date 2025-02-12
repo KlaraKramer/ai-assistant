@@ -190,7 +190,7 @@ def update_ui(contents, filename):
 
     # If no data has been uploaded yet
     if contents is None:
-        return html.Div('Unsupported file type.'), {'display': 'block'}#, html.Div('No recommendations available. Upload data first.')
+        return html.Div('Unsupported file type.'), {'display': 'block'}
 
     # Handle file upload (uploading data)
     else:
@@ -282,9 +282,9 @@ def render_duplicates(n_clicks):
         # Detect and visualise duplicates
         current_df, dups_count = detect_duplicates(current_df)
         right_df = current_df
-        right_df.intent = [human_previous.columns]
+        right_df.intent = human_previous.columns
         # Display the second visualisation
-        vis2 = Vis(len(vis_objects), right_df)
+        vis2 = Vis(len(vis_objects), right_df, enhance='duplicate')
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis2)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -368,7 +368,7 @@ def update_duplicates(drop_value, n_clicks):
             # Detect and visualise duplicates
             current_df, dups_count = detect_duplicates(current_df)
             right_df = current_df
-            right_df.intent = [human_previous.columns]
+            right_df.intent = human_previous.columns
             # Display the second visualisation
             vis2 = Vis(len(vis_objects), right_df)
             # Populate vis_objects list for referring back to the visualisations
@@ -437,8 +437,9 @@ def render_outliers(n_clicks):
         ## Human View ##
         # Detect and visualise outliers
         outlier_df, outlier_count = train_isolation_forest(current_df, intent=human_previous.columns)
+        outlier_df.intent = human_previous.columns
         # Display the second visualisation
-        vis2 = Vis(len(vis_objects), outlier_df)
+        vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis2)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
