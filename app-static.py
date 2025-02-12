@@ -595,4 +595,4 @@ def update_progress(contents, click_dup, click_out):
 
 # Run the Dash app
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)
