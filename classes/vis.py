@@ -6,7 +6,7 @@ from helper_functions import *
 
 class Vis:
 
-    def __init__(self, id, df, rec_group=0, num_rec=0, machine_view=False, enhance=None):
+    def __init__(self, id, df, rec_group=0, num_rec=0, machine_view=False, enhance=None, temporary=False):
         self.id = id
         self.columns = None
         self.output_type = None
@@ -32,6 +32,7 @@ class Vis:
             # Generate recommendations and store the resulting dictionary explicitly
             if 'id' in df.columns:
                 df = df.drop('id', axis=1)
+            df = self.infer_column_types(df)
             recommendations = df.recommendation
             if recommendations:
                 # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
@@ -71,48 +72,64 @@ class Vis:
                         self.lux_vis = self.selected_recommendations[0]
                     # Get the relevant column names
                     self.columns = extract_vis_columns(self.lux_vis)
-                    
-                    # Initialise variables that will be specified in the fig_code 
-                    fig, ax = plt.subplots()
-                    tab20c = plt.get_cmap('tab20c')
-                    # Render the visualisation using Lux
-                    try:
-                        fig_code = self.lux_vis.to_matplotlib()
-                    except ValueError:
-                        print('Error in to_matplotlib()')
-                        fig_code = ''
-                    fixed_fig_code = fix_lux_code(fig_code)
-                    exec(fixed_fig_code)
 
-                    # Capture the current Matplotlib figure
-                    fig = plt.gcf()
-                    if fig is None:
-                        pass ########### Return useful error here
-                    plt.draw()
+                    if not temporary:                    
+                        # Initialise variables that will be specified in the fig_code 
+                        fig, ax = plt.subplots()
+                        tab20c = plt.get_cmap('tab20c')
+                        # Render the visualisation using Lux
+                        try:
+                            # print("******************self.lux_vis: ", self.lux_vis, "*************************")
+                            # print("******************self.lux_vis.to_matplotlib(): ", self.lux_vis.to_matplotlib(), "********")
+                            fig_code = self.lux_vis.to_matplotlib()
+                        except ValueError:
+                            print('Error in to_matplotlib()')
+                            fig_code = ''
+                        fixed_fig_code = fix_lux_code(fig_code)
+                        exec(fixed_fig_code)
 
-                    # Adjust layout to prevent legend cutoff
-                    plt.tight_layout()  # Auto-adjust layout to fit everything
-                    # Manually adjust legend if needed
-                    fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
+                        # Capture the current Matplotlib figure
+                        fig = plt.gcf()
+                        if fig is None:
+                            pass ########### Return useful error here
+                        plt.draw()
 
-                    # ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+                        # Adjust layout to prevent legend cutoff
+                        plt.tight_layout()  # Auto-adjust layout to fit everything
+                        # Manually adjust legend if needed
+                        fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
 
-                    # Try to convert Matplotlib figure to Plotly
-                    try:
-                        fig = mpl_to_plotly(fig)
-                        # Specify layout size
-                        fig.update_layout(
-                            autosize=True,  # Allow auto-sizing within Dash
-                            height=400,  
-                            width=600  
-                        )
-                        self.figure = fig
-                        self.output_type = 'plotly'
-                    except Exception: #ValueError
-                        # If an error occurs, display the static Matplotlib image instead
-                        print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
-                        # Create the styled Matplotlib figure
-                        fallback_fig = create_styled_matplotlib_figure(fig)
-                        # Convert Matplotlib figure to base64 image
-                        self.figure = fig_to_base64(fallback_fig)
-                        self.output_type = 'img'        
+                        # ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+
+                        # Try to convert Matplotlib figure to Plotly
+                        try:
+                            fig = mpl_to_plotly(fig)
+                            # Specify layout size
+                            fig.update_layout(
+                                autosize=True,  # Allow auto-sizing within Dash
+                                height=400,  
+                                width=600  
+                            )
+                            self.figure = fig
+                            self.output_type = 'plotly'
+                        except Exception: #ValueError
+                            # If an error occurs, display the static Matplotlib image instead
+                            print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
+                            # Create the styled Matplotlib figure
+                            fallback_fig = create_styled_matplotlib_figure(fig)
+                            # Convert Matplotlib figure to base64 image
+                            self.figure = fig_to_base64(fallback_fig)
+                            self.output_type = 'img'   
+
+    def infer_column_types(self, df):
+        # Check if column is datetime column
+        for col in df.columns:
+            try:
+                parsed_col = pd.to_datetime(col, errors='coerce', infer_datetime_format=True)
+                timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
+                if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
+                    # Convert timestamp column to integer
+                    df[col] = parsed_col
+            except Exception:
+                continue
+        return df

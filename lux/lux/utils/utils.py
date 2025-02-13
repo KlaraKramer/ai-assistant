@@ -14,6 +14,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import lux
+import importlib.util
 
 
 def convert_to_list(x):
@@ -52,7 +53,8 @@ def get_filter_specs(intent):
 def check_import_lux_widget():
     import pkgutil
 
-    if pkgutil.find_loader("luxwidget") is None:
+    # if pkgutil.find_loader("luxwidget") is None:
+    if importlib.util.find_spec("luxwidget") is None:
         raise Exception(
             "luxwidget is not installed. Run `pip install luxwidget' to install the Jupyter widget.\nSee more at: https://github.com/lux-org/lux-widget"
         )

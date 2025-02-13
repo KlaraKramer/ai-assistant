@@ -507,7 +507,7 @@ def update_outliers(drop_value, n_clicks):
     graph_list = []
     options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}
 
-    if n_clicks is None or None in drop_value:    
+    if n_clicks is None or None in drop_value or stage != 'outlier-handling':    
         return dash.no_update
     else:
         if n_clicks > 0 and current_df is not None:
@@ -516,6 +516,7 @@ def update_outliers(drop_value, n_clicks):
             human_previous = vis_objects[-1]
 
             if 'next' == drop_value[-1]:
+                stage = 'outlier-handling-2'
                 update_outliers_2(drop_value, n_clicks)
 
             elif 'accept' == drop_value[-1]:
@@ -650,8 +651,8 @@ def update_outliers_2(drop_value, n_clicks):
                 current_df = lux.LuxDataFrame(current_df)
 
                 # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                temp_vis = Vis(len(vis_objects), current_df, num_rec=1)
-                print("**********************temp_vis.columns: ", temp_vis.columns, "****************************")
+                temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                # print("**********************temp_vis.columns: ", temp_vis.columns, "****************************")
                 current_df.intent = extract_intent(temp_vis.columns)
                 vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                 # Populate vis_objects list for referring back to the visualisations
