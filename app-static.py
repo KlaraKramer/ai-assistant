@@ -45,7 +45,7 @@ vis_objects = []
 # Global variable to store components of the various sections of the pipeline
 dups_count = 0
 outlier_count = 0
-outlier_contamination = 0
+outlier_contamination_history = []
 
 # # Global variable to store the n_clicks_list for figures
 # figure_clicks = []
@@ -435,7 +435,7 @@ def render_outliers(n_clicks):
     global step
     global vis_objects
     global outlier_count
-    global outlier_contamination
+    global outlier_contamination_history
 
     selected_option = ''
     graph_list = []
@@ -460,7 +460,8 @@ def render_outliers(n_clicks):
 
         ## Human View ##
         # Detect and visualise outliers
-        outlier_contamination = 0.2
+        outlier_contamination_history.append(0.2)
+        outlier_contamination = outlier_contamination_history[-1]
         intent = extract_intent(human_previous.columns)
         current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
         outlier_df = current_df.copy()
@@ -501,7 +502,7 @@ def update_outliers(drop_value, n_clicks):
     global step
     global vis_objects
     global outlier_count
-    global outlier_contamination
+    global outlier_contamination_history
 
     selected_option = ''
     graph_list = []
@@ -536,7 +537,8 @@ def update_outliers(drop_value, n_clicks):
 
                 ## Human View ##
                 # Detect and visualise outliers
-                outlier_contamination = 0.2
+                outlier_contamination_history.append(0.2)
+                outlier_contamination = outlier_contamination_history[-1]
                 intent = extract_intent(human_previous.columns)
                 current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
                 outlier_df = current_df.copy()
@@ -566,11 +568,13 @@ def update_outliers(drop_value, n_clicks):
                 if 'more' == drop_value[-1]:
                     selected_option = 'Find more outliers'
                     # Increase contamination parameter to find more outliers
-                    outlier_contamination += 0.1
+                    outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    outlier_contamination_history.append(outlier_contamination)
                 elif 'less' in drop_value[-1]:
                     selected_option = 'Find less outliers'
                     # Decrease contamination parameter to find more outliers
-                    outlier_contamination -= 0.1
+                    outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    outlier_contamination_history.append(outlier_contamination)
                 else:
                     return dash.no_update
                 
@@ -617,7 +621,7 @@ def update_outliers_2(drop_value, n_clicks):
     global step
     global vis_objects
     global outlier_count
-    global outlier_contamination
+    global outlier_contamination_history
 
     selected_option = ''
     graph_list = []
@@ -646,13 +650,13 @@ def update_outliers_2(drop_value, n_clicks):
                 
                 ## Human View ##
                 # Detect and visualise outliers
-                outlier_contamination = 0.2
+                outlier_contamination_history = [0.2]
+                outlier_contamination = outlier_contamination_history[-1]
                 current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination)
                 current_df = lux.LuxDataFrame(current_df)
 
                 # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                 temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                # print("**********************temp_vis.columns: ", temp_vis.columns, "****************************")
                 current_df.intent = extract_intent(temp_vis.columns)
                 vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                 # Populate vis_objects list for referring back to the visualisations
@@ -668,11 +672,13 @@ def update_outliers_2(drop_value, n_clicks):
                 if 'more' == drop_value[-1]:
                     selected_option = 'Find more outliers'
                     # Increase contamination parameter to find more outliers
-                    outlier_contamination += 0.1
+                    outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    outlier_contamination_history.append(outlier_contamination)
                 elif 'less' in drop_value[-1]:
                     selected_option = 'Find less outliers'
                     # Decrease contamination parameter to find more outliers
-                    outlier_contamination -= 0.1
+                    outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    outlier_contamination_history.append(outlier_contamination)
                 else:
                     return dash.no_update
                 
