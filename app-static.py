@@ -82,6 +82,7 @@ progress_bar = html.Div(
                 dbc.NavLink('Data loading', href='#output-data-upload', active='exact', id='progress-load', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Duplicate removal', href='#duplicate-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Outlier handling', href='#outlier-output', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Downloading', href='#download-header', active='exact', id='progress-download', style={'background-color': 'red', 'color': 'white'}),
             ],
             vertical=True,
             pills=True,
@@ -670,6 +671,7 @@ def update_outliers(drop_value, n_clicks):
     [Output(component_id='progress-load', component_property='style'),
      Output(component_id='progress-duplicate', component_property='style'),
      Output(component_id='progress-outlier', component_property='style'),
+     Output(component_id='progress-download', component_property='style'),
      Output(component_id='duplicate-end-btn', component_property='style'),
      Output(component_id='outlier-end-btn', component_property='style'),
      Output(component_id='csv-btn', component_property='style'),
@@ -677,13 +679,14 @@ def update_outliers(drop_value, n_clicks):
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='start-button', component_property='n_clicks'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
-     Input(component_id='outlier-end-btn', component_property='n_clicks')],
+     Input(component_id='outlier-end-btn', component_property='n_clicks'),
+     Input(component_id='csv-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
-def update_progress(contents, click_start, click_dup, click_out):
+def update_progress(contents, click_start, click_dup, click_out, click_down):
     ctx = dash.callback_context
     # Default colours and display values
-    load_colour, dup_colour, out_colour = 'red', 'red', 'red'
+    load_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red'
     dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
@@ -692,6 +695,7 @@ def update_progress(contents, click_start, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'red'
         out_colour = 'red'
+        down_colour = 'red'
         dup_style = {'display': 'block'}
         out_style = {'display': 'none'}
         download_style = {'display': 'none'}
@@ -699,6 +703,7 @@ def update_progress(contents, click_start, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'red'
+        down_colour = 'red'
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'none'}
@@ -706,6 +711,15 @@ def update_progress(contents, click_start, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
+        down_colour = 'red'
+        dup_style = {'display': 'block'}
+        out_style = {'display': 'block'}
+        download_style = {'display': 'block'}
+    if 'csv-btn' in changed_id:
+        load_colour = 'green'
+        dup_colour = 'green'
+        out_colour = 'green'
+        down_colour = 'green'
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
@@ -715,6 +729,7 @@ def update_progress(contents, click_start, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'red'
         out_colour = 'red'
+        down_colour = 'red'
         dup_style = {'display': 'none'}
         out_style = {'display': 'none'}
     
@@ -722,6 +737,7 @@ def update_progress(contents, click_start, click_dup, click_out):
         {'background-color': load_colour, 'color': 'white'},
         {'background-color': dup_colour, 'color': 'white'},
         {'background-color': out_colour, 'color': 'white'},
+        {'background-color': down_colour, 'color': 'white'},
         dup_style,
         out_style,
         download_style,
