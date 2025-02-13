@@ -61,6 +61,7 @@ class AltairRenderer:
         if vis.data is not None:
             for attr in list(vis.data.columns):
                 if pd.api.types.is_period_dtype(vis.data.dtypes[attr]) or isinstance(
+                # if isinstance(vis.data.dtypes[attr], pd.PeriodDtype) or isinstance(
                     vis.data[attr].iloc[0], pd.Period
                 ):
                     dateColumn = vis.data[attr]

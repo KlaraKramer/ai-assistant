@@ -156,6 +156,11 @@ dashboard = html.Div(id='dashboard', children=[
                 className='mt-4',
                 children=[]
             ),
+            html.Div(
+                id='outlier-output-2', 
+                className='mt-4',
+                children=[]
+            ),
             dbc.Button(
                 'Finish Outlier Handling',
                 id='outlier-end-btn',
@@ -309,14 +314,13 @@ def render_duplicates(n_clicks):
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-                html.P(f'{dups_count} duplicated rows were detected'),
+                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
                     options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
-                ),
-                html.P(f'{selected_option}')
+                )
             ])
         return [new_div]
 
@@ -350,7 +354,7 @@ def update_duplicates(drop_value, n_clicks):
             highlight_df = highlight_df.sort_values(by=[highlight_df.columns[2], highlight_df.columns[3], highlight_df.columns[4]])
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{dups_count} duplicated rows were detected'),
+                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
                 dbc.Table.from_dataframe(highlight_df, striped=True, bordered=True, hover=True),
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -394,14 +398,13 @@ def update_duplicates(drop_value, n_clicks):
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{dups_count} duplicated rows were detected'),
+                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
                     options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
-                ),
-                html.P(f'{selected_option}')
+                )
             ])
             return [new_div]
         else:
@@ -464,14 +467,13 @@ def render_outliers(n_clicks):
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-                html.P(f'{outlier_count} outlier values were detected'),
+                html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
                     options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
-                ),
-                html.P(f'{selected_option}')
+                )
             ])
         return [new_div]
 
@@ -493,6 +495,7 @@ def update_outliers(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
+    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
 
     if n_clicks is None or None in drop_value:    
         return dash.no_update
@@ -501,7 +504,13 @@ def update_outliers(drop_value, n_clicks):
             step += 1
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
-            if 'delete' == drop_value[-1]:
+
+            if 'next' == drop_value[-1]:
+                update_outliers_2(drop_value, n_clicks)
+
+            if 'accept' == drop_value[-1]:
+                options['next'] = 'Show remaining outliers'
+                del options['accept']
                 selected_option = 'Accept and remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
@@ -573,14 +582,118 @@ def update_outliers(drop_value, n_clicks):
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
-                    html.P(f'{outlier_count} outlier values were detected'),
+                    html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
+                    graph_div,
+                    dcc.Dropdown(
+                        placeholder='Select an action to take', 
+                        id={'type': 'outlier-handling', 'index': step},
+                        options=options
+                    )
+                ])
+            return [new_div]
+        else:
+            return dash.no_update
+
+# Callback to handle updates within the 'outlier-handling' stage #2
+@app.callback(
+    [Output(component_id='outlier-output-2', component_property='children')],
+    [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
+    [State(component_id='duplicate-end-btn', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def update_outliers_2(drop_value, n_clicks):
+    global current_df
+    global stage
+    global step
+    global vis_objects
+    global outlier_count
+    global outlier_contamination
+
+    selected_option = ''
+    graph_list = []
+
+    if n_clicks is None or None in drop_value or len(drop_value) < 2:    
+        return dash.no_update
+    else:
+        if n_clicks > 0 and current_df is not None:
+            step += 1
+
+            ## Machine View ##
+            # Display a parallel coordinates plot
+            vis1 = Vis(len(vis_objects), current_df, machine_view=True)
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis1)
+            # Append the graph, wrapped in a Div to track clicks, to graph_list
+            graph1 = Graph_component(vis1)
+            if graph1.div is not None:
+                graph_list.append(graph1.div)
+
+            # Access the last visualisation rendered on the right (human view)
+            human_previous = vis_objects[-1]
+
+            if 'next' == drop_value[-1]:
+                selected_option = 'Show remaining outliers'
+                
+                ## Human View ##
+                # Detect and visualise outliers
+                outlier_contamination = 0.2
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination)
+                current_df = lux.LuxDataFrame(current_df)
+
+                # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                print('\n temp_vis')
+                temp_vis = Vis(len(vis_objects), current_df, num_rec=1)
+                current_df.intent = extract_intent(temp_vis.columns)
+                print('\n vis2')
+                vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                print('\n')
+
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+
+            else:
+                if 'more' == drop_value[-1]:
+                    selected_option = 'Find more outliers'
+                    # Increase contamination parameter to find more outliers
+                    outlier_contamination += 0.1
+                elif 'less' in drop_value[-1]:
+                    selected_option = 'Find less outliers'
+                    # Decrease contamination parameter to find more outliers
+                    outlier_contamination -= 0.1
+                else:
+                    return dash.no_update
+                
+                intent = extract_intent(human_previous.columns)
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+                outlier_df = current_df.copy()
+                outlier_df.intent = intent
+                # Display the second visualisation
+                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+
+            # Return all components
+            graph_div = show_side_by_side(graph_list)
+            new_div = html.Div(children=[
+                    html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
                     graph_div,
                     dcc.Dropdown(
                         placeholder='Select an action to take', 
                         id={'type': 'outlier-handling', 'index': step},
                         options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
-                    ),
-                    html.P(f'{selected_option}')
+                    )
                 ])
             return [new_div]
         else:
