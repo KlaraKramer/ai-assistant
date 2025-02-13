@@ -142,7 +142,8 @@ def is_datetime_series(series: pd.Series) -> bool:
     -------
     is_date: bool
     """
-    return pd.api.types.is_datetime64_any_dtype(series) or pd.api.types.is_period_dtype(series)
+    # return pd.api.types.is_datetime64_any_dtype(series) or pd.api.types.is_period_dtype(series)
+    return pd.api.types.is_datetime64_any_dtype(series) or isinstance(series, pd.PeriodDtype)
 
 
 def is_datetime_string(string: str) -> bool:

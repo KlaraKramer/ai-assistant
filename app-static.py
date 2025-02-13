@@ -220,9 +220,9 @@ def update_ui(contents, filename):
             step += 1
             # Enable Lux for the uploaded DataFrame
             uploaded_df = pd.DataFrame(uploaded_df)
-            current_df = uploaded_df
-            if 'unnamed_0' in current_df.columns:
-                current_df = current_df.drop('unnamed_0', axis=1)
+            if 'unnamed_0' in uploaded_df.columns:
+                uploaded_df = uploaded_df.drop('unnamed_0', axis=1)
+            current_df = uploaded_df.copy()
             graph_components = []
             # Reset global variables
             vis_objects = []
@@ -231,7 +231,7 @@ def update_ui(contents, filename):
 
             ## Machine View ##
             # Display a parallel coordinates plot
-            vis1 = Vis(len(vis_objects), current_df, machine_view=True)
+            vis1 = Vis(len(vis_objects), uploaded_df, machine_view=True)
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis1)
             # Append the graph, wrapped in a Div to track clicks, to graph_components
@@ -311,6 +311,10 @@ def render_duplicates(n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        if dups_count == 0:
+                show_dropdown = {'display': 'none'}
+        else:
+            show_dropdown = {'display': 'block'}
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
@@ -319,7 +323,8 @@ def render_duplicates(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
-                    options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'},
+                    style=show_dropdown
                 )
             ])
         return [new_div]
@@ -359,7 +364,7 @@ def update_duplicates(drop_value, n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
-                    options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'}
                 )
             ])
             return [new_div]
@@ -394,6 +399,10 @@ def update_duplicates(drop_value, n_clicks):
             else:
                 print('No recommendations available. Please upload data first.')
 
+            if dups_count == 0:
+                show_dropdown = {'display': 'none'}
+            else:
+                show_dropdown = {'display': 'block'}
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
@@ -403,7 +412,8 @@ def update_duplicates(drop_value, n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
-                    options={'highlight': 'Highlight duplicated rows', 'delete': 'Delete duplicates'}
+                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'},
+                    style=show_dropdown
                 )
             ])
             return [new_div]
@@ -472,7 +482,7 @@ def render_outliers(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
-                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
+                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}
                 )
             ])
         return [new_div]
@@ -495,7 +505,7 @@ def update_outliers(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
+    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}
 
     if n_clicks is None or None in drop_value:    
         return dash.no_update
@@ -509,9 +519,8 @@ def update_outliers(drop_value, n_clicks):
                 update_outliers_2(drop_value, n_clicks)
 
             if 'accept' == drop_value[-1]:
-                options['next'] = 'Show remaining outliers'
-                del options['accept']
-                selected_option = 'Accept and remove the detected outliers'
+                options['next'] = 'Show remaining outliers in alternative visualisation'
+                selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
                 ## Machine View ##
@@ -532,7 +541,7 @@ def update_outliers(drop_value, n_clicks):
                 outlier_df = current_df.copy()
                 outlier_df.intent = intent
                 # Display the second visualisation
-                vis2 = Vis(len(vis_objects), outlier_df)
+                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
                 # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -692,7 +701,7 @@ def update_outliers_2(drop_value, n_clicks):
                     dcc.Dropdown(
                         placeholder='Select an action to take', 
                         id={'type': 'outlier-handling', 'index': step},
-                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
+                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}
                     )
                 ])
             return [new_div]

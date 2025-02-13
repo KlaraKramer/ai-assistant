@@ -106,7 +106,7 @@ class Vis:
                         )
                         self.figure = fig
                         self.output_type = 'plotly'
-                    except ValueError:
+                    except Exception: #ValueError
                         # If an error occurs, display the static Matplotlib image instead
                         print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
                         # Create the styled Matplotlib figure
