@@ -36,7 +36,7 @@ class Vis:
             if recommendations:
                 # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
                 rec_options = [key for key in recommendations]
-                print('****************************rec_options: ', rec_options, '**************************')
+                # print('****************************rec_options: ', rec_options, '**************************')
                 if 'Correlation' in rec_options:
                     self.rec_type = 'Correlation'
                 elif 'Enhance' in rec_options:
@@ -49,7 +49,7 @@ class Vis:
                         # Access first recommendation group
                         self.rec_type = rec_options[0]
                 self.selected_recommendations = recommendations[self.rec_type]
-                print('****************************selected_recs: ', self.selected_recommendations, '*******************')
+                # print('****************************selected_recs: ', self.selected_recommendations, '*******************')
 
                 # Plot figure
                 if self.selected_recommendations:
@@ -86,6 +86,8 @@ class Vis:
 
                     # Capture the current Matplotlib figure
                     fig = plt.gcf()
+                    if fig is None:
+                        pass ########### Return useful error here
                     plt.draw()
 
                     # Adjust layout to prevent legend cutoff

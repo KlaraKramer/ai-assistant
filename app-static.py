@@ -93,7 +93,7 @@ progress_bar = html.Div(
 
 dashboard = html.Div(id='dashboard', children=[
     dbc.Container([
-        html.H1('Interactive Visual Data Engineering', className='text-center my-4'),
+        html.H1('Visual Data Wizard', className='text-center my-4'),
 
         # File upload component
         dcc.Upload(
@@ -518,7 +518,7 @@ def update_outliers(drop_value, n_clicks):
             if 'next' == drop_value[-1]:
                 update_outliers_2(drop_value, n_clicks)
 
-            if 'accept' == drop_value[-1]:
+            elif 'accept' == drop_value[-1]:
                 options['next'] = 'Show remaining outliers in alternative visualisation'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
@@ -650,13 +650,10 @@ def update_outliers_2(drop_value, n_clicks):
                 current_df = lux.LuxDataFrame(current_df)
 
                 # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                print('\n temp_vis')
                 temp_vis = Vis(len(vis_objects), current_df, num_rec=1)
+                print("**********************temp_vis.columns: ", temp_vis.columns, "****************************")
                 current_df.intent = extract_intent(temp_vis.columns)
-                print('\n vis2')
                 vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                print('\n')
-
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
                 # Append the graph, wrapped in a Div to track clicks, to graph_list
