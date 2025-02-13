@@ -161,7 +161,16 @@ dashboard = html.Div(id='dashboard', children=[
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
-        ])
+        ]),
+
+        html.H5('Download Section', id='download-header', style={'display': 'none'}),
+        dbc.Button(
+            'Download Cleaned Data',
+            id='csv-btn',
+            className='btn btn-success',
+            style={'display': 'none'}
+        ),
+        dcc.Download(id='download-dataframe-csv'),
     ]) # style={'justify': 'center', 'align': 'center'})
 ], style=DASHBOARD_STYLE)
 
@@ -662,7 +671,9 @@ def update_outliers(drop_value, n_clicks):
      Output(component_id='progress-duplicate', component_property='style'),
      Output(component_id='progress-outlier', component_property='style'),
      Output(component_id='duplicate-end-btn', component_property='style'),
-     Output(component_id='outlier-end-btn', component_property='style')],
+     Output(component_id='outlier-end-btn', component_property='style'),
+     Output(component_id='csv-btn', component_property='style'),
+     Output(component_id='download-header', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='start-button', component_property='n_clicks'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
@@ -673,7 +684,7 @@ def update_progress(contents, click_start, click_dup, click_out):
     ctx = dash.callback_context
     # Default colours and display values
     load_colour, dup_colour, out_colour = 'red', 'red', 'red'
-    dup_style, out_style = {'display': 'none'}, {'display': 'none'}
+    dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -683,18 +694,21 @@ def update_progress(contents, click_start, click_dup, click_out):
         out_colour = 'red'
         dup_style = {'display': 'block'}
         out_style = {'display': 'none'}
+        download_style = {'display': 'none'}
     if 'duplicate-end-btn' in changed_id:
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'red'
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
+        download_style = {'display': 'none'}
     if 'outlier-end-btn' in changed_id:
         load_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
+        download_style = {'display': 'block'}
     
     # If a new file is uploaded, reset dup_colour and out_colour to 'red'
     if ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
@@ -709,8 +723,19 @@ def update_progress(contents, click_start, click_dup, click_out):
         {'background-color': dup_colour, 'color': 'white'},
         {'background-color': out_colour, 'color': 'white'},
         dup_style,
-        out_style
+        out_style,
+        download_style,
+        download_style
     )
+
+# Callback to download cleaned dataset into a csv file
+@app.callback(
+    Output(component_id='download-dataframe-csv', component_property='data'),
+    Input(component_id='csv-btn', component_property='n_clicks'),
+    prevent_initial_call=True,
+)
+def func(n_clicks):
+    return dcc.send_data_frame(current_df.to_csv, 'cleaned_data.csv')
 
 # Expose the Flask server
 server = app.server
