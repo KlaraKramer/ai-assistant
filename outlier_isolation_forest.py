@@ -1,12 +1,6 @@
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
-# import sys
-# import os
-
-# # Add locally cloned Lux source code to path, and import Lux from there
-# sys.path.insert(0, os.path.abspath('./lux'))
-# import lux
 
 def train_isolation_forest(data, contamination=0.2, intent=[]):
     # Make a copy of the data to retain original categorical labels
@@ -40,14 +34,9 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
 
     # Apply predictions to the original DataFrame
     data_original['outlier'] = yhat == -1
-
     # Count outliers
     outlier_count = data_original['outlier'].sum()
-
-    # # Convert back to LuxDataFrame
-    # data_original = LuxDataFrame(data_original)
-
-    # Preserve intent metadata if applicable
+    # Preserve intent if applicable
     data_original.intent = intent  
 
     return data_original, outlier_count

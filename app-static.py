@@ -45,6 +45,7 @@ vis_objects = []
 # Global variable to store components of the various sections of the pipeline
 dups_count = 0
 outlier_count = 0
+outlier_contamination = 0
 
 # # Global variable to store the n_clicks_list for figures
 # figure_clicks = []
@@ -198,6 +199,8 @@ def update_ui(contents, filename):
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
         file_name = filename
+        stage = 'data-loading'
+        step = 0
         if uploaded_df is not None:
             step += 1
             # Enable Lux for the uploaded DataFrame
@@ -220,8 +223,6 @@ def update_ui(contents, filename):
             graph1 = Graph_component(vis1)
             if graph1.div is not None:
                 graph_components.append(graph1.div)
-            else:
-                print("No recommendations available. Please upload data first.")
 
             ## Human View ##
             # Display the first recommended visualisation
@@ -278,14 +279,12 @@ def render_duplicates(n_clicks):
         graph1 = Graph_component(vis1)
         if graph1.div is not None:
             graph_list.append(graph1.div)
-        else:
-            print('No recommendations available. Please upload data first.')
 
         ## Human View ##
         # Detect and visualise duplicates
         current_df, dups_count = detect_duplicates(current_df)
-        right_df = current_df
-        right_df.intent = human_previous.columns
+        right_df = current_df.copy()
+        right_df.intent = extract_intent(human_previous.columns)
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), right_df, enhance='duplicate')
         # Populate vis_objects list for referring back to the visualisations
@@ -364,14 +363,12 @@ def update_duplicates(drop_value, n_clicks):
             graph1 = Graph_component(vis1)
             if graph1.div is not None:
                 graph_list.append(graph1.div)
-            else:
-                print('No recommendations available. Please upload data first.')
 
             ## Human View ##
             # Detect and visualise duplicates
             current_df, dups_count = detect_duplicates(current_df)
-            right_df = current_df
-            right_df.intent = human_previous.columns
+            right_df = current_df.copy()
+            right_df.intent = extract_intent(human_previous.columns)
             # Display the second visualisation
             vis2 = Vis(len(vis_objects), right_df)
             # Populate vis_objects list for referring back to the visualisations
@@ -415,6 +412,7 @@ def render_outliers(n_clicks):
     global step
     global vis_objects
     global outlier_count
+    global outlier_contamination
 
     selected_option = ''
     graph_list = []
@@ -439,8 +437,11 @@ def render_outliers(n_clicks):
 
         ## Human View ##
         # Detect and visualise outliers
-        outlier_df, outlier_count = train_isolation_forest(current_df, intent=human_previous.columns)
-        outlier_df.intent = human_previous.columns
+        outlier_contamination = 0.2
+        intent = extract_intent(human_previous.columns)
+        current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+        outlier_df = current_df.copy()
+        outlier_df.intent = intent
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
         # Populate vis_objects list for referring back to the visualisations
@@ -449,8 +450,6 @@ def render_outliers(n_clicks):
         graph2 = Graph_component(vis2)
         if graph2.div is not None:
             graph_list.append(graph2.div)
-        else:
-            print('No recommendations available. Please upload data first.')
 
         # Return all components
         graph_div = show_side_by_side(graph_list)
@@ -460,11 +459,122 @@ def render_outliers(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
-                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the highlighted outliers'}
+                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
                 ),
                 html.P(f'{selected_option}')
             ])
         return [new_div]
+
+
+# Callback to handle updates within the 'outlier-handling' stage
+@app.callback(
+    [Output(component_id='outlier-output-1', component_property='children')],
+    [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
+    [State(component_id='duplicate-end-btn', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def update_outliers(drop_value, n_clicks):
+    global current_df
+    global stage
+    global step
+    global vis_objects
+    global outlier_count
+    global outlier_contamination
+
+    selected_option = ''
+    graph_list = []
+
+    if n_clicks is None or None in drop_value:    
+        return dash.no_update
+    else:
+        if n_clicks > 0 and current_df is not None:
+            step += 1
+            # Access the last visualisation rendered on the right (human view)
+            human_previous = vis_objects[-1]
+            if 'delete' == drop_value[-1]:
+                selected_option = 'Accept and remove the detected outliers'
+                current_df = current_df[current_df.outlier != True]
+                
+                ## Machine View ##
+                # Display a parallel coordinates plot
+                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis1)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph1 = Graph_component(vis1)
+                if graph1.div is not None:
+                    graph_list.append(graph1.div)
+
+                ## Human View ##
+                # Detect and visualise outliers
+                outlier_contamination = 0.2
+                intent = extract_intent(human_previous.columns)
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+                outlier_df = current_df.copy()
+                outlier_df.intent = intent
+                # Display the second visualisation
+                vis2 = Vis(len(vis_objects), outlier_df)
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+
+            else:
+                ## Machine View ##
+                # Display a parallel coordinates plot
+                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis1)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph1 = Graph_component(vis1)
+                if graph1.div is not None:
+                    graph_list.append(graph1.div)
+
+                if 'more' == drop_value[-1]:
+                    selected_option = 'Find more outliers'
+                    # Increase contamination parameter to find more outliers
+                    outlier_contamination += 0.1
+                elif 'less' in drop_value[-1]:
+                    selected_option = 'Find less outliers'
+                    # Decrease contamination parameter to find more outliers
+                    outlier_contamination -= 0.1
+                else:
+                    return dash.no_update
+                
+                intent = extract_intent(human_previous.columns)
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+                outlier_df = current_df.copy()
+                outlier_df.intent = intent
+                # Display the second visualisation
+                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+
+            # Return all components
+            graph_div = show_side_by_side(graph_list)
+            new_div = html.Div(children=[
+                    html.P(f'{outlier_count} outlier values were detected'),
+                    graph_div,
+                    dcc.Dropdown(
+                        placeholder='Select an action to take', 
+                        id={'type': 'outlier-handling', 'index': step},
+                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Accept and remove the detected outliers'}
+                    ),
+                    html.P(f'{selected_option}')
+                ])
+            return [new_div]
+        else:
+            return dash.no_update
 
 
 # # Callback to handle graph clicks
@@ -554,18 +664,25 @@ def render_outliers(n_clicks):
      Output(component_id='duplicate-end-btn', component_property='style'),
      Output(component_id='outlier-end-btn', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
+     Input(component_id='start-button', component_property='n_clicks'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
      Input(component_id='outlier-end-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
-def update_progress(contents, click_dup, click_out):
+def update_progress(contents, click_start, click_dup, click_out):
     ctx = dash.callback_context
     # Default colours and display values
     load_colour, dup_colour, out_colour = 'red', 'red', 'red'
-    dup_style, out_style = {'display': 'block'}, {'display': 'none'}
+    dup_style, out_style = {'display': 'none'}, {'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if 'start-button' in changed_id:
+        load_colour = 'green'
+        dup_colour = 'red'
+        out_colour = 'red'
+        dup_style = {'display': 'block'}
+        out_style = {'display': 'none'}
     if 'duplicate-end-btn' in changed_id:
         load_colour = 'green'
         dup_colour = 'green'
@@ -584,7 +701,7 @@ def update_progress(contents, click_dup, click_out):
         load_colour = 'green'
         dup_colour = 'red'
         out_colour = 'red'
-        dup_style = {'display': 'block'}
+        dup_style = {'display': 'none'}
         out_style = {'display': 'none'}
     
     return (

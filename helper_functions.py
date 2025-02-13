@@ -131,3 +131,13 @@ def show_side_by_side(components):
             'width': '90%'
         }
     )
+
+def extract_intent(lst):
+    if not lst or len(lst) < 2:
+        # Return an empty list if input is invalid
+        return []  
+    
+    first_item = lst[0]
+    # Split at the first comma and take the first part
+    second_item = lst[1].split(',')[0]  
+    return [first_item, second_item]
