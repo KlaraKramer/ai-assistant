@@ -1,0 +1,20 @@
+/* Enable smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Styling for progress navigation */
+.nav-link {
+    padding: 10px;
+    display: block;
+    text-decoration: none;
+    color: white !important;
+    background-color: red;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.nav-link:hover {
+    background-color: darkred;
+}
