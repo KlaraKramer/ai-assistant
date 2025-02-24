@@ -460,8 +460,8 @@ def render_outliers(n_clicks):
 
         ## Human View ##
         # Detect and visualise outliers
-        outlier_contamination_history.append(0.2)
-        outlier_contamination = outlier_contamination_history[-1]
+        outlier_contamination = determine_contamination(outlier_contamination_history, True)
+        outlier_contamination_history.append(outlier_contamination)
         intent = extract_intent(human_previous.columns)
         current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
         outlier_df = current_df.copy()
@@ -568,13 +568,17 @@ def update_outliers(drop_value, n_clicks):
                 if 'more' == drop_value[-1]:
                     selected_option = 'Find more outliers'
                     # Increase contamination parameter to find more outliers
-                    outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    outlier_contamination = determine_contamination(outlier_contamination_history, True)
                     outlier_contamination_history.append(outlier_contamination)
+                    # outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    # outlier_contamination_history.append(outlier_contamination)
                 elif 'less' in drop_value[-1]:
                     selected_option = 'Find less outliers'
                     # Decrease contamination parameter to find more outliers
-                    outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    outlier_contamination = determine_contamination(outlier_contamination_history, False)
                     outlier_contamination_history.append(outlier_contamination)
+                    # outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    # outlier_contamination_history.append(outlier_contamination)
                 else:
                     return dash.no_update
                 
@@ -658,6 +662,7 @@ def update_outliers_2(drop_value, n_clicks):
                 # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                 temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                 current_df.intent = extract_intent(temp_vis.columns)
+                # print('*****************INTENT BEFORE VIS CALL: ', extract_intent(temp_vis.columns), '****************')
                 vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
@@ -672,13 +677,17 @@ def update_outliers_2(drop_value, n_clicks):
                 if 'more' == drop_value[-1]:
                     selected_option = 'Find more outliers'
                     # Increase contamination parameter to find more outliers
-                    outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    outlier_contamination = determine_contamination(outlier_contamination_history, True)
                     outlier_contamination_history.append(outlier_contamination)
+                    # outlier_contamination = outlier_contamination_history[-1] + 0.1
+                    # outlier_contamination_history.append(outlier_contamination)
                 elif 'less' in drop_value[-1]:
                     selected_option = 'Find less outliers'
                     # Decrease contamination parameter to find more outliers
-                    outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    outlier_contamination = determine_contamination(outlier_contamination_history, False)
                     outlier_contamination_history.append(outlier_contamination)
+                    # outlier_contamination = outlier_contamination_history[-1] - 0.1
+                    # outlier_contamination_history.append(outlier_contamination)
                 else:
                     return dash.no_update
                 

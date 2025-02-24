@@ -141,3 +141,16 @@ def extract_intent(lst):
     # Split at the first comma and take the first part
     second_item = lst[1].split(',')[0]  
     return [first_item, second_item]
+
+def determine_contamination(cont_history, more):
+    contamination = 0.2
+    if len(cont_history) > 0:
+        if more is True:
+            contamination = cont_history[-1] * 1.9
+            if contamination > 0.5:
+                contamination = 0.5
+        else:
+            contamination = cont_history[-1] * 0.6
+            if contamination <= 0.0:
+                contamination = 0.01
+    return round(contamination, 4)
