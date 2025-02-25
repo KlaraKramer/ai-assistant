@@ -16,6 +16,7 @@ import numpy as np
 from helper_functions import *
 from outlier_isolation_forest import *
 from duplicate_detection import *
+from missing_value_detection import *
 from classes.vis import Vis
 from classes.graph_component import Graph_component
 
@@ -45,6 +46,7 @@ vis_objects = []
 
 # Global variable to store components of the various sections of the pipeline
 dups_count = 0
+missing_count = 0
 outlier_count = 0
 outlier_contamination_history = []
 
@@ -81,6 +83,7 @@ progress_bar = html.Div(
         dbc.Nav(
             [
                 dbc.NavLink('Data loading', href='#output-data-upload', active='exact', id='progress-load', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Missing value removal', href='#missing-output', active='exact', id='progress-missing', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Duplicate removal', href='#duplicate-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Outlier handling', href='#outlier-output', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Downloading', href='#download-header', active='exact', id='progress-download', style={'background-color': 'red', 'color': 'white'}),
@@ -123,6 +126,22 @@ dashboard = html.Div(id='dashboard', children=[
         ),
 
         html.Div([
+            html.Div(
+                id='missing-output', 
+                className='mt-4',
+                children=[]
+            ),
+            html.Div(
+                id='missing-output-1', 
+                className='mt-4',
+                children=[]
+            ),
+            dbc.Button(
+                'Finish Missing Value Removal',
+                id='missing-end-btn',
+                className='btn btn-success',
+                style={'display': 'none'}
+            ),
             html.Div(
                 id='duplicate-output', 
                 className='mt-4',
@@ -270,10 +289,132 @@ def update_ui(contents, filename):
             )
 
 
+# Callback to handle the first render within the 'missing-value-handling' stage
+@app.callback(
+    [Output(component_id='missing-output', component_property='children')],
+    [Input(component_id='start-button', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def render_missing_values(n_clicks):
+    global current_df
+    global stage
+    global step
+    global vis_objects
+    global missing_count
+
+    if n_clicks > 0 and current_df is not None:
+        stage = 'missing-value-handling'
+        step += 1
+
+        missing_df, missing_count = detect_missing_values(current_df)
+
+        if isinstance(missing_df, pd.Series):
+            missing_df = missing_df.to_frame()
+
+        if missing_count == 0:
+            new_div = html.Div(children=[
+                html.P(f'{missing_count} missing values were detected', style={'color': 'green'}),
+            ])
+        else:
+            new_div = html.Div(children=[
+                html.P(f'{missing_count} missing values were detected', style={'color': 'red'}),
+                dbc.Table.from_dataframe(missing_df, striped=True, bordered=True, hover=True),
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'missing-value-removal', 'index': step},
+                    options={'highlight': 'Show rows with missing values', 'delete': 'Delete rows with missing values', 'impute-simple': 'Impute missing values using the univariate mean', 'impute-KNN': 'Impute missing values using the k nearest neighbours'}
+                )
+            ])
+        return [new_div]
+    
+
+# Callback to handle updates within the 'missing-value-handling' stage
+@app.callback(
+    [Output(component_id='missing-output-1', component_property='children')],
+    [Input(component_id={'type': 'missing-value-removal', 'index': ALL}, component_property='value')],
+    [State(component_id='start-button', component_property='n_clicks')],
+    prevent_initial_call=True
+)
+def update_missing_values(drop_value, n_clicks):
+    global current_df
+    global stage
+    global step
+    global vis_objects
+    global missing_count
+
+    selected_option = ''
+    graph_list = []
+    if drop_value[-1] is None:
+        return dash.no_update
+    if n_clicks > 0 and current_df is not None:
+        step += 1
+
+        if 'highlight' == drop_value[-1]:
+            selected_option = 'Show rows with missing values'
+            # Detect and show missing values
+            highlight_df = current_df.isnull().values.any(axis=1)
+            if isinstance(highlight_df, np.ndarray) or isinstance(highlight_df, pd.Series):
+                highlight_df = pd.DataFrame(highlight_df)
+            new_div = html.Div(children=[
+                html.P(f'Selected action: {selected_option}'),
+                html.P(f'{missing_count} missing values were detected', style={'color': 'red'}),
+                dbc.Table.from_dataframe(highlight_df, striped=True, bordered=True, hover=True),
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'missing-value-removal', 'index': step},
+                    options={'delete': 'Delete rows with missing values', 'impute-simple': 'Impute missing values using the univariate mean', 'impute-KNN': 'Impute missing values using the k nearest neighbours'}
+                )
+            ])
+            return [new_div]
+        elif 'impute-simple' == drop_value[-1]:
+            current_df = impute_missing_values(current_df)
+        elif 'impute-KNN' == drop_value[-1]:
+            current_df = impute_missing_values(current_df, 'KNN')
+        elif 'delete' == drop_value[-1]:
+            selected_option = 'Delete rows with missing values'
+            current_df = current_df[current_df.notnull().all(axis=1)]
+        else:
+            return dash.no_update
+
+        missing_df, missing_count = detect_missing_values(current_df)
+        ## Machine View ##
+        # Display a parallel coordinates plot
+        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis1)
+        # Append the graph, wrapped in a Div to track clicks, to graph_list
+        graph1 = Graph_component(vis1)
+        if graph1.div is not None:
+            graph_list.append(graph1.div)
+
+        ## Human View ##
+        # Display the first recommended visualisation
+        vis2 = Vis(len(vis_objects), current_df) #, num_rec=1
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis2)
+        # Append the graph, wrapped in a Div to track clicks, to graph_list
+        graph2 = Graph_component(vis2)
+        if graph2.div is not None:
+            graph_list.append(graph2.div)
+        else:
+            print('No recommendations available. Please upload data first.')
+        # Return all components
+        graph_div = show_side_by_side(graph_list)
+        new_div = html.Div(children=[
+            html.P(f'Selected action: {selected_option}'),
+            html.P(f'{missing_count} missing values were detected', style={'color': 'green'}),
+            graph_div
+        ])
+        return [new_div]
+        
+    else:
+        return dash.no_update
+
+
 # Callback to handle the first render within the 'duplicate-removal' stage
 @app.callback(
     [Output(component_id='duplicate-output', component_property='children')],
-    [Input(component_id='start-button', component_property='n_clicks')],
+    [Input(component_id='missing-end-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
 def render_duplicates(n_clicks):
@@ -283,7 +424,6 @@ def render_duplicates(n_clicks):
     global vis_objects
     global dups_count
 
-    selected_option = ''
     graph_list = []
     # First render
     if n_clicks > 0 and current_df is not None:
@@ -325,15 +465,15 @@ def render_duplicates(n_clicks):
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
-                graph_div,
-                dcc.Dropdown(
-                    placeholder='Select an action to take', 
-                    id={'type': 'duplicate-removal', 'index': step},
-                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'},
-                    style=show_dropdown
-                )
-            ])
+            html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
+            graph_div,
+            dcc.Dropdown(
+                placeholder='Select an action to take', 
+                id={'type': 'duplicate-removal', 'index': step},
+                options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'},
+                style=show_dropdown
+            )
+        ])
         return [new_div]
 
 
@@ -341,7 +481,7 @@ def render_duplicates(n_clicks):
 @app.callback(
     [Output(component_id='duplicate-output-1', component_property='children')],
     [Input(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='value')],
-    [State(component_id='start-button', component_property='n_clicks')],
+    [State(component_id='missing-end-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
 def update_duplicates(drop_value, n_clicks):
@@ -428,7 +568,7 @@ def update_duplicates(drop_value, n_clicks):
             return dash.no_update
     else:
         return dash.no_update
-
+         
 
 # Callback to handle the first render within the 'outlier-handling' stage
 @app.callback(
@@ -444,7 +584,6 @@ def render_outliers(n_clicks):
     global outlier_count
     global outlier_contamination_history
 
-    selected_option = ''
     graph_list = []
     # First render
     if n_clicks > 0 and current_df is not None:
@@ -608,14 +747,15 @@ def update_outliers(drop_value, n_clicks):
                 # Return all components
                 graph_div = show_side_by_side(graph_list)
                 new_div = html.Div(children=[
-                        html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
-                        graph_div,
-                        dcc.Dropdown(
-                            placeholder='Select an action to take', 
-                            id={'type': 'outlier-handling', 'index': step},
-                            options=options
-                        )
-                    ])
+                    html.P(f'Selected action: {selected_option}'),
+                    html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
+                    graph_div,
+                    dcc.Dropdown(
+                        placeholder='Select an action to take', 
+                        id={'type': 'outlier-handling', 'index': step},
+                        options=options
+                    )
+                ])
                 return [new_div]
         else:
             return dash.no_update
@@ -725,14 +865,15 @@ def update_outliers_2(drop_value, n_clicks):
                 # Return all components
                 graph_div = show_side_by_side(graph_list)
                 new_div = html.Div(children=[
-                        html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
-                        graph_div,
-                        dcc.Dropdown(
-                            placeholder='Select an action to take', 
-                            id={'type': 'outlier-handling', 'index': step},
-                            options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
-                        )
-                    ])
+                    html.P(f'Selected action: {selected_option}'),
+                    html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
+                    graph_div,
+                    dcc.Dropdown(
+                        placeholder='Select an action to take', 
+                        id={'type': 'outlier-handling', 'index': step},
+                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
+                    )
+                ])
                 return [new_div]
         else:
             return dash.no_update
@@ -820,9 +961,11 @@ def update_outliers_2(drop_value, n_clicks):
 # Callback to update progress
 @app.callback(
     [Output(component_id='progress-load', component_property='style'),
+     Output(component_id='progress-missing', component_property='style'),
      Output(component_id='progress-duplicate', component_property='style'),
      Output(component_id='progress-outlier', component_property='style'),
      Output(component_id='progress-download', component_property='style'),
+     Output(component_id='missing-end-btn', component_property='style'),
      Output(component_id='duplicate-end-btn', component_property='style'),
      Output(component_id='outlier-end-btn', component_property='style'),
      Output(component_id='csv-btn', component_property='style'),
@@ -830,57 +973,78 @@ def update_outliers_2(drop_value, n_clicks):
      Output(component_id='download-btn', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='start-button', component_property='n_clicks'),
+     Input(component_id='missing-end-btn', component_property='n_clicks'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
      Input(component_id='outlier-end-btn', component_property='n_clicks'),
      Input(component_id='csv-btn', component_property='n_clicks'),
      Input(component_id='download-btn', component_property='n_clicks')],
     prevent_initial_call=True
 )
-def update_progress(contents, click_start, click_dup, click_out, click_down, click_down_dash):
+def update_progress(contents, click_start, click_miss, click_dup, click_out, click_down, click_down_dash):
     ctx = dash.callback_context
     # Default colours and display values
     load_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red'
-    dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+    missing_style, dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'start-button' in changed_id:
         load_colour = 'green'
+        miss_colour = 'red'
         dup_colour = 'red'
         out_colour = 'red'
         down_colour = 'red'
+        missing_style = {'display': 'block'}
+        dup_style = {'display': 'none'}
+        out_style = {'display': 'none'}
+        download_style = {'display': 'none'}
+    if 'missing-end-btn' in changed_id:
+        load_colour = 'green'
+        miss_colour = 'green'
+        dup_colour = 'red'
+        out_colour = 'red'
+        down_colour = 'red'
+        missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'none'}
         download_style = {'display': 'none'}
     if 'duplicate-end-btn' in changed_id:
         load_colour = 'green'
+        miss_colour = 'green'
         dup_colour = 'green'
         out_colour = 'red'
         down_colour = 'red'
+        missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'none'}
     if 'outlier-end-btn' in changed_id:
         load_colour = 'green'
+        miss_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
         down_colour = 'red'
+        missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
     if 'csv-btn' in changed_id:
         load_colour = 'green'
+        miss_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
         down_colour = 'red'
+        missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
     if 'download-btn' in changed_id:
         load_colour = 'green'
+        miss_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
         down_colour = 'green'
+        missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
@@ -888,6 +1052,7 @@ def update_progress(contents, click_start, click_dup, click_out, click_down, cli
     # If a new file is uploaded, reset dup_colour and out_colour to 'red'
     if ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
         load_colour = 'green'
+        miss_colour = 'red'
         dup_colour = 'red'
         out_colour = 'red'
         down_colour = 'red'
@@ -896,9 +1061,11 @@ def update_progress(contents, click_start, click_dup, click_out, click_down, cli
     
     return (
         {'background-color': load_colour, 'color': 'white'},
+        {'background-color': miss_colour, 'color': 'white'},
         {'background-color': dup_colour, 'color': 'white'},
         {'background-color': out_colour, 'color': 'white'},
         {'background-color': down_colour, 'color': 'white'},
+        missing_style,
         dup_style,
         out_style,
         download_style,
@@ -914,21 +1081,6 @@ def update_progress(contents, click_start, click_dup, click_out, click_down, cli
 )
 def func(n_clicks):
     return dcc.send_data_frame(current_df.to_csv, 'cleaned_data.csv')
-
-# # Callback to save the current app as an HTML file
-# @app.callback(
-#     dash.Output(component_id='download-html', component_property='data'),
-#     dash.Input(component_id='download-btn', component_property='n_clicks'),
-#     prevent_initial_call=True
-# )
-# def provide_dashboard_file(n_clicks):
-#     if n_clicks:
-#         html_content = app.index_string
-#         with open('dashboard.html', "w", encoding="utf-8") as f:
-#             f.write(html_content)
-#         return dcc.send_file('dashboard.html')
-#     else:
-#         return dash.no_update
 
 # Expose the Flask server
 server = app.server
