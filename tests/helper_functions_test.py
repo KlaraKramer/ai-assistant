@@ -9,13 +9,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from helper_functions import *
 
 
-# @pytest.fixture
-# def number_a():
-#     return 2
+def test_extract_intent():
+    # Test normal behaviour
+    output = extract_intent(['item 1', 'item 2, side note'])
+    assert len(output) == 2
 
-# @pytest.fixture
-# def number_b():
-#     return 3
+    # Test fallback behaviour for empty input list
+    output = extract_intent([])
+    assert output == []
 
 
 def test_determine_contamination():
