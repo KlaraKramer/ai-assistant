@@ -1,5 +1,11 @@
 import pytest
 import pandas as pd
+import sys
+import os
+
+# Add the parent directory (ai-assistant/) to the path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from helper_functions import *
 
 
