@@ -351,10 +351,8 @@ def update_missing_values(drop_value, n_clicks):
 
         if 'highlight' == drop_value[-1]:
             selected_option = 'Show rows with missing values'
-            # Detect and show missing values
-            highlight_df = current_df.isnull().values.any(axis=1)
-            if isinstance(highlight_df, np.ndarray) or isinstance(highlight_df, pd.Series):
-                highlight_df = pd.DataFrame(highlight_df)
+            # Detect and show rows with missing values
+            highlight_df = current_df[current_df.isnull().any(axis=1)]
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
                 html.P(f'{missing_count} missing values were detected', style={'color': 'red'}),
