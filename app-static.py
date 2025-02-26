@@ -24,6 +24,9 @@ from classes.graph_component import Graph_component
 sys.path.insert(0, os.path.abspath('./lux'))
 import lux
 
+lux.config.default_display = "matplotlib"
+matplotlib.use("Agg")  # Use a non-interactive backend
+
 # Use non-interactive backend
 matplotlib.use('Agg')  
 
@@ -552,13 +555,15 @@ def update_duplicates(drop_value, n_clicks):
 
             if dups_count == 0:
                 show_dropdown = {'display': 'none'}
+                text_col = {'color': 'green'}
             else:
                 show_dropdown = {'display': 'block'}
+                text_col = {'color': 'red'}
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
+                html.P(f'{dups_count} duplicated rows were detected', style=text_col),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -817,7 +822,6 @@ def update_outliers_2(drop_value, n_clicks):
                     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
-                    # print('*****************INTENT BEFORE VIS CALL: ', extract_intent(temp_vis.columns), '****************')
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
@@ -843,7 +847,7 @@ def update_outliers_2(drop_value, n_clicks):
                         outlier_contamination_history.append(outlier_contamination)
                         # outlier_contamination = outlier_contamination_history[-1] - 0.1
                         # outlier_contamination_history.append(outlier_contamination)
-                    elif 'accept' == drop_value[-1]:
+                    elif 'remove' == drop_value[-1] or 'accept' == drop_value[-1]:
                         selected_option = 'Remove the detected outliers'
                         current_df = current_df[current_df.outlier != True]
                         outlier_contamination = 0.2
@@ -855,8 +859,15 @@ def update_outliers_2(drop_value, n_clicks):
                     current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
                     outlier_df = current_df.copy()
                     outlier_df.intent = intent
-                    # Display the second visualisation
-                    vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                    # Display the second visualisation, catching any AttributeError that occurs
+                    try:
+                        vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                    except AttributeError as e:
+                        print(e)
+                        # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                        temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                        current_df.intent = extract_intent(temp_vis.columns)
+                        vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
                     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -875,7 +886,7 @@ def update_outliers_2(drop_value, n_clicks):
                     dcc.Dropdown(
                         placeholder='Select an action to take', 
                         id={'type': 'outlier-handling', 'index': step},
-                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
+                        options={'more': 'Find more outliers', 'less': 'Find less outliers', 'remove': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
                     )
                 ])
                 return [new_div]
@@ -1084,7 +1095,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     prevent_initial_call=True,
 )
 def func(n_clicks):
-    return dcc.send_data_frame(current_df.to_csv, 'cleaned_data.csv')
+    return dcc.send_data_frame(downloadable_data(current_df).to_csv, 'cleaned_data.csv')
 
 # Expose the Flask server
 server = app.server

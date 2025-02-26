@@ -21,7 +21,7 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
     # Check if column is datetime column or categorical column
     for col in object_cols:
         try:
-            parsed_col = pd.to_datetime(col, errors='coerce', infer_datetime_format=True)
+            parsed_col = pd.to_datetime(col, errors='coerce') # , infer_datetime_format=True
             timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
             if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
                 # Convert timestamp column to integer

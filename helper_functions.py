@@ -154,3 +154,10 @@ def determine_contamination(cont_history, more):
             if contamination <= 0.0:
                 contamination = 0.01
     return round(contamination, 4)
+
+def downloadable_data(df):
+    if 'duplicate' in df.columns:
+        df = df.drop(columns=['duplicate'])
+    if 'outlier' in df.columns:
+        df = df.drop(columns=['outlier'])
+    return df

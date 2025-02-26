@@ -80,7 +80,7 @@ class Vis:
                         tab20c = plt.get_cmap('tab20c')
                         # Render the visualisation using Lux
                         try:
-                            # print("******************self.lux_vis: ", self.lux_vis, "*************************")
+                            print("**********self.lux_vis: ", self.lux_vis, "****************")
                             # print("******************self.lux_vis.to_matplotlib(): ", self.lux_vis.to_matplotlib(), "********")
                             fig_code = self.lux_vis.to_matplotlib()
                         except ValueError:
@@ -96,6 +96,7 @@ class Vis:
                         # Capture the current Matplotlib figure
                         fig = plt.gcf()
                         if fig is None:
+                            print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
                             pass ########### Return useful error here
                         plt.draw()
 
@@ -130,7 +131,7 @@ class Vis:
         # Check if column is datetime column
         for col in df.columns:
             try:
-                parsed_col = pd.to_datetime(col, errors='coerce', infer_datetime_format=True)
+                parsed_col = pd.to_datetime(col, errors='coerce') # , infer_datetime_format=True
                 timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
                 if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
                     # Convert timestamp column to integer
