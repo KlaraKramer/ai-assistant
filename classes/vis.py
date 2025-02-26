@@ -80,8 +80,7 @@ class Vis:
                         tab20c = plt.get_cmap('tab20c')
                         # Render the visualisation using Lux
                         try:
-                            print("**********self.lux_vis: ", self.lux_vis, "****************")
-                            # print("******************self.lux_vis.to_matplotlib(): ", self.lux_vis.to_matplotlib(), "********")
+                            # print("**********self.lux_vis: ", self.lux_vis, "****************")
                             fig_code = self.lux_vis.to_matplotlib()
                         except ValueError:
                             print('Error in to_matplotlib()')
@@ -96,7 +95,7 @@ class Vis:
                         # Capture the current Matplotlib figure
                         fig = plt.gcf()
                         if fig is None:
-                            print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
+                            # print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
                             pass ########### Return useful error here
                         plt.draw()
 
@@ -105,7 +104,12 @@ class Vis:
                         # Manually adjust legend if needed
                         fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
 
-                        # ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
+                        # if not fig.axes:
+                        #     print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
+                        # if not any(ax.has_data() for ax in fig.axes):
+                        #     print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
+
+
 
                         # Try to convert Matplotlib figure to Plotly
                         try:
@@ -118,9 +122,9 @@ class Vis:
                             )
                             self.figure = fig
                             self.output_type = 'plotly'
-                        except Exception: #ValueError
+                        except Exception as e: #ValueError
                             # If an error occurs, display the static Matplotlib image instead
-                            print('Error during mpl_to_plotly conversion, falling back to displaying a static image.')
+                            print('Error during mpl_to_plotly conversion, falling back to displaying a static image:\n', e, '\n********************************')
                             # Create the styled Matplotlib figure
                             fallback_fig = create_styled_matplotlib_figure(fig)
                             # Convert Matplotlib figure to base64 image

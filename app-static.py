@@ -24,7 +24,6 @@ from classes.graph_component import Graph_component
 sys.path.insert(0, os.path.abspath('./lux'))
 import lux
 
-lux.config.default_display = "matplotlib"
 matplotlib.use("Agg")  # Use a non-interactive backend
 
 # Use non-interactive backend
@@ -693,8 +692,8 @@ def update_outliers(drop_value, n_clicks):
 
                     ## Human View ##
                     # Detect and visualise outliers
-                    outlier_contamination_history.append(0.2)
                     outlier_contamination = outlier_contamination_history[-1]
+                    outlier_contamination_history.append(outlier_contamination)
                     intent = extract_intent(human_previous.columns)
                     current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
                     outlier_df = current_df.copy()
@@ -791,6 +790,7 @@ def update_outliers_2(drop_value, n_clicks):
         return dash.no_update
     else:
         if n_clicks > 0 and current_df is not None:
+            stage = 'outlier-handling-2'
             step += 1
 
             if 'finish' == drop_value[-1]:
@@ -838,19 +838,16 @@ def update_outliers_2(drop_value, n_clicks):
                         # Increase contamination parameter to find more outliers
                         outlier_contamination = determine_contamination(outlier_contamination_history, True)
                         outlier_contamination_history.append(outlier_contamination)
-                        # outlier_contamination = outlier_contamination_history[-1] + 0.1
-                        # outlier_contamination_history.append(outlier_contamination)
                     elif 'less' in drop_value[-1]:
                         selected_option = 'Find less outliers'
                         # Decrease contamination parameter to find more outliers
                         outlier_contamination = determine_contamination(outlier_contamination_history, False)
                         outlier_contamination_history.append(outlier_contamination)
-                        # outlier_contamination = outlier_contamination_history[-1] - 0.1
-                        # outlier_contamination_history.append(outlier_contamination)
                     elif 'remove' == drop_value[-1] or 'accept' == drop_value[-1]:
                         selected_option = 'Remove the detected outliers'
                         current_df = current_df[current_df.outlier != True]
-                        outlier_contamination = 0.2
+                        # outlier_contamination = 0.2
+                        outlier_contamination = outlier_contamination_history[-1]
                         outlier_contamination_history.append(outlier_contamination)
                     else:
                         return dash.no_update
