@@ -46,9 +46,13 @@ def parse_datetime_cols(df):
     for col in object_cols:
         try:
             parsed_col = pd.to_datetime(col, errors='coerce')
+            # The below line is necessary to ensure that the exception occurs when a categorical column is encountered
+            timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
+            # if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
             data_original[col] = parsed_col
         except Exception:
             # Treat it as a non-datetime column
+            data_original[col] = data_original[col]
             pass
     return data_original
 

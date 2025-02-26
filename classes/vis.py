@@ -1,6 +1,8 @@
 from plotly.tools import mpl_to_plotly
 from matplotlib.cm import Set1
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from pandas import NaT
+
 
 from helper_functions import *
 
@@ -80,7 +82,7 @@ class Vis:
                         tab20c = plt.get_cmap('tab20c')
                         # Render the visualisation using Lux
                         try:
-                            # print("**********self.lux_vis: ", self.lux_vis, "****************")
+                            print("**********self.lux_vis: ", self.lux_vis, "****************")
                             fig_code = self.lux_vis.to_matplotlib()
                         except ValueError:
                             print('Error in to_matplotlib()')
@@ -95,7 +97,7 @@ class Vis:
                         # Capture the current Matplotlib figure
                         fig = plt.gcf()
                         if fig is None:
-                            # print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
+                            print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
                             pass ########### Return useful error here
                         plt.draw()
 
@@ -104,11 +106,16 @@ class Vis:
                         # Manually adjust legend if needed
                         fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
 
-                        # if not fig.axes:
-                        #     print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
-                        # if not any(ax.has_data() for ax in fig.axes):
-                        #     print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
+                        if not fig.axes:
+                            print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
+                            print("fig\n", fig, "\n")
+                        if not any(ax.has_data() for ax in fig.axes):
+                            print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
+                            print("fig\n", fig, "\n")
 
+                        # for ax in fig.axes:
+                        #     if not ax.has_data():
+                        #         ax.plot([0], [0], alpha=0)  # Invisible dummy point
 
 
                         # Try to convert Matplotlib figure to Plotly
