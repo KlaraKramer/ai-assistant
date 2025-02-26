@@ -303,10 +303,12 @@ def render_missing_values(n_clicks):
     global step
     global vis_objects
     global missing_count
+    global file_name
 
     if n_clicks > 0 and current_df is not None:
         stage = 'missing-value-handling'
         step += 1
+        file_name = determine_filename(file_name)
 
         missing_df, missing_count = detect_missing_values(current_df)
 
@@ -547,6 +549,12 @@ def update_duplicates(drop_value, n_clicks):
             right_df.intent = extract_intent(human_previous.columns)
             # Display the second visualisation
             vis2 = Vis(len(vis_objects), right_df)
+            # Catch the missing value error if applicable:
+            if vis2.missing_value_flag:
+                new_div = html.Div(children=[
+                    html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+                ])
+                return [new_div]
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis2)
             # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -626,6 +634,12 @@ def render_outliers(n_clicks):
         outlier_df.intent = intent
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+        # Catch the missing value error if applicable:
+        if vis2.missing_value_flag:
+            new_div = html.Div(children=[
+                html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+            ])
+            return [new_div]
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis2)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -704,6 +718,12 @@ def update_outliers(drop_value, n_clicks):
                     outlier_df.intent = intent
                     # Display the second visualisation
                     vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                    # Catch the missing value error if applicable:
+                    if vis2.missing_value_flag:
+                        new_div = html.Div(children=[
+                            html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+                        ])
+                        return [new_div]
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
                     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -747,6 +767,12 @@ def update_outliers(drop_value, n_clicks):
                     outlier_df.intent = intent
                     # Display the second visualisation
                     vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                    # Catch the missing value error if applicable:
+                    if vis2.missing_value_flag:
+                        new_div = html.Div(children=[
+                            html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+                        ])
+                        return [new_div]
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
                     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -827,6 +853,12 @@ def update_outliers_2(drop_value, n_clicks):
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                    # Catch the missing value error if applicable:
+                    if vis2.missing_value_flag:
+                        new_div = html.Div(children=[
+                            html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+                        ])
+                        return [new_div]
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
                     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -863,6 +895,12 @@ def update_outliers_2(drop_value, n_clicks):
                     # Display the second visualisation, catching any AttributeError that occurs
                     try:
                         vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                        # Catch the missing value error if applicable:
+                        if vis2.missing_value_flag:
+                            new_div = html.Div(children=[
+                                html.P(f'There are currently no visualisations available.', style={'color': 'black'})
+                            ])
+                            return [new_div]
                     except AttributeError as e:
                         print(e)
                         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
@@ -1096,7 +1134,8 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     prevent_initial_call=True,
 )
 def func(n_clicks):
-    return dcc.send_data_frame(downloadable_data(current_df).to_csv, 'cleaned_data.csv')
+    global file_name
+    return dcc.send_data_frame(downloadable_data(current_df).to_csv, file_name)
 
 # Expose the Flask server
 server = app.server

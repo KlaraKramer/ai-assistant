@@ -36,7 +36,11 @@ class Vis:
             if 'id' in df.columns:
                 df = df.drop('id', axis=1)
             df = self.infer_column_types(df)
-            recommendations = df.recommendation
+            try:
+                recommendations = df.recommendation
+            except IndexError as e:
+                print('IndexError: ', e)
+                self.missing_value_flag = True
             if recommendations:
                 # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
                 rec_options = [key for key in recommendations]

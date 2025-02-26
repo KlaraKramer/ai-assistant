@@ -186,3 +186,12 @@ def downloadable_data(df):
     if 'outlier' in df.columns:
         df = df.drop(columns=['outlier'])
     return df
+
+def determine_filename(og_filename):
+    og_filename = og_filename[:-4]
+    if 'corrupted' in og_filename:
+        og_filename = og_filename.replace('corrupted', 'clean')
+    else:
+        og_filename = og_filename + '_clean'
+    og_filename = og_filename + '.csv'
+    return og_filename
