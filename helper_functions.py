@@ -27,9 +27,30 @@ def parse_contents(contents, filename):
         df.rename(columns=lambda x: x.lower().replace(' ', '_').replace('-', '_'), inplace=True)
         # Remove all special characters from column names
         df.rename(columns=lambda x: x.lower().replace(':', '').replace('$', '').replace('(', '').replace(')', ''), inplace=True)
+        # Detect and convert any datetime columns
+        df = parse_datetime_cols(df)
 
         return df
     return None
+
+def parse_datetime_cols(df):
+    # Make a copy of the data to retain original
+    data_original = df.copy()
+    # Convert LuxDataFrame to Pandas DataFrame if necessary
+    if not isinstance(data_original, pd.DataFrame):
+        data_original = pd.DataFrame(data_original)
+    # Find the object columns
+    object_cols = data_original.select_dtypes(include=['object']).columns
+
+    # Check if column is datetime column
+    for col in object_cols:
+        try:
+            parsed_col = pd.to_datetime(col, errors='coerce')
+            data_original[col] = parsed_col
+        except Exception:
+            # Treat it as a non-datetime column
+            pass
+    return data_original
 
 def create_styled_matplotlib_figure(fig):
     # Apply Plotly-like styling to an existing Matplotlib figure

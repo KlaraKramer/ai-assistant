@@ -14,8 +14,17 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
     if not isinstance(data_original, pd.DataFrame):
         data_original = pd.DataFrame(data_original)
 
-    # Convert object columns to numerical for model training
     data_converted = data_original.copy()
+
+    # Convert datetime columns to timestamps
+    for col in data_converted.select_dtypes(include=['datetime64']).columns:
+        data_converted[col] = data_converted[col].astype('int64') // 10**9  # Convert to seconds
+
+    # Convert boolean columns to integers
+    for col in data_converted.select_dtypes(include=['bool']).columns:
+        data_converted[col] = data_converted[col].astype(int)
+
+    # Convert object columns to numerical for model training
     object_cols = data_converted.select_dtypes(include=['object']).columns
 
     # Check if column is datetime column or categorical column
