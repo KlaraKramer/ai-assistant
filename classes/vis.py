@@ -14,6 +14,7 @@ class Vis:
         self.figure = None
         self.machine_view = machine_view
         self.enhance = enhance
+        self.missing_value_flag = False
 
         if machine_view:
             # Display a parallel coordinates plot
@@ -86,7 +87,11 @@ class Vis:
                             print('Error in to_matplotlib()')
                             fig_code = ''
                         fixed_fig_code = fix_lux_code(fig_code)
-                        exec(fixed_fig_code)
+                        try:
+                            exec(fixed_fig_code)
+                        except ValueError as e:
+                            print(e)
+                            self.missing_value_flag = True
 
                         # Capture the current Matplotlib figure
                         fig = plt.gcf()

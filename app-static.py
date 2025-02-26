@@ -137,7 +137,7 @@ dashboard = html.Div(id='dashboard', children=[
                 children=[]
             ),
             dbc.Button(
-                'Finish Missing Value Removal',
+                'Finish Missing Value Handling',
                 id='missing-end-btn',
                 className='btn btn-success',
                 style={'display': 'none'}
@@ -447,6 +447,12 @@ def render_duplicates(n_clicks):
         right_df.intent = extract_intent(human_previous.columns)
         # Display the second visualisation
         vis2 = Vis(len(vis_objects), right_df, enhance='duplicate')
+        # Catch the missing value error if applicable:
+        if vis2.missing_value_flag:
+            new_div = html.Div(children=[
+                html.P(f'ERROR: Visualisations cannot be displayed due to missing values in the data. Please revisit the "Missing Value Handling" step above, and click the "Finish Missing Value Handling" button when done.', style={'color': 'red'})
+            ])
+            return [new_div]
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis2)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
