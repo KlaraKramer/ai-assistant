@@ -367,8 +367,10 @@ def update_missing_values(drop_value, n_clicks):
             ])
             return [new_div]
         elif 'impute-simple' == drop_value[-1]:
+            selected_option = 'Impute missing values using the univariate mean'
             current_df = impute_missing_values(current_df)
         elif 'impute-KNN' == drop_value[-1]:
+            selected_option = 'Impute missing values using the k nearest neighbours'
             current_df = impute_missing_values(current_df, 'KNN')
         elif 'delete' == drop_value[-1]:
             selected_option = 'Delete rows with missing values'
@@ -465,13 +467,15 @@ def render_duplicates(n_clicks):
             print('No recommendations available. Please upload data first.')
 
         if dups_count == 0:
-                show_dropdown = {'display': 'none'}
+            show_dropdown = {'display': 'none'}
+            text_col = {'color': 'green'}
         else:
             show_dropdown = {'display': 'block'}
+            text_col = {'color': 'red'}
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-            html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
+            html.P(f'{dups_count} duplicated rows were detected', style=text_col),
             graph_div,
             dcc.Dropdown(
                 placeholder='Select an action to take', 
