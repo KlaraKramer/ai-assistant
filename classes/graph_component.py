@@ -21,17 +21,27 @@ class Graph_component:
             )
             
         elif vis.output_type == 'img':
-            # Create an Img component and wrap it in Div to track clicks
             self.div = html.Div(
                 children=[
-                    html.Img(
-                        id={'type': 'image', 'index': vis.id}, 
-                        src=vis.figure,
-                        style={'width': '45%', 'boxSizing': 'border-box'} # 'padding': '5px', 
+                    html.P(
+                        'There is currently no recommended visualisation available. Please choose an option.'
                     )
                 ],
                 id={'type': 'graph-container', 'index': vis.id, 'columns': str(vis.columns)},  # Store columns ID
-                style={'cursor': 'pointer'},  # Indicate clickability
-                n_clicks=0  # Track clicks
+                # style={'cursor': 'pointer'},  # Indicate clickability
+                # n_clicks=0  # Track clicks
             )
+            # # Create an Img component and wrap it in Div to track clicks
+            # self.div = html.Div(
+            #     children=[
+            #         html.Img(
+            #             id={'type': 'image', 'index': vis.id}, 
+            #             src=vis.figure,
+            #             style={'width': '45%', 'boxSizing': 'border-box'} # 'padding': '5px', 
+            #         )
+            #     ],
+            #     id={'type': 'graph-container', 'index': vis.id, 'columns': str(vis.columns)},  # Store columns ID
+            #     style={'cursor': 'pointer'},  # Indicate clickability
+            #     n_clicks=0  # Track clicks
+            # )
         
