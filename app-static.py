@@ -61,6 +61,19 @@ outlier_contamination_history = []
 # # Global variable to store selected columns from clicking on a figure
 # selected_columns = ()
 
+# Local helper function
+def render_machine_view(vis_objects, df, graph_components):
+    ## Machine View ##
+    # Display a parallel coordinates plot
+    vis1 = Vis(len(vis_objects), df, machine_view=True)
+    # Populate vis_objects list for referring back to the visualisations
+    vis_objects.append(vis1)
+    # Append the graph, wrapped in a Div to track clicks, to graph_components
+    graph1 = Graph_component(vis1)
+    if graph1.div is not None:
+        graph_components.append(graph1.div)
+    return vis_objects, graph_components
+
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
 PROGRESS_BAR_STYLE = {
@@ -263,14 +276,7 @@ def update_ui(contents, filename):
             outlier_count = 0
 
             ## Machine View ##
-            # Display a parallel coordinates plot
-            vis1 = Vis(len(vis_objects), uploaded_df, machine_view=True)
-            # Populate vis_objects list for referring back to the visualisations
-            vis_objects.append(vis1)
-            # Append the graph, wrapped in a Div to track clicks, to graph_components
-            graph1 = Graph_component(vis1)
-            if graph1.div is not None:
-                graph_components.append(graph1.div)
+            vis_objects, graph_components = render_machine_view(vis_objects, uploaded_df, graph_components)
 
             ## Human View ##
             # Display the first recommended visualisation
@@ -387,14 +393,7 @@ def update_missing_values(drop_value, n_clicks):
 
         missing_df, missing_count = detect_missing_values(current_df)
         ## Machine View ##
-        # Display a parallel coordinates plot
-        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-        # Populate vis_objects list for referring back to the visualisations
-        vis_objects.append(vis1)
-        # Append the graph, wrapped in a Div to track clicks, to graph_list
-        graph1 = Graph_component(vis1)
-        if graph1.div is not None:
-            graph_list.append(graph1.div)
+        vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
         ## Human View ##
         # Display the first recommended visualisation
@@ -442,14 +441,7 @@ def render_duplicates(n_clicks):
         human_previous = vis_objects[-1]
         
         ## Machine View ##
-        # Display a parallel coordinates plot
-        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-        # Populate vis_objects list for referring back to the visualisations
-        vis_objects.append(vis1)
-        # Append the graph, wrapped in a Div to track clicks, to graph_list
-        graph1 = Graph_component(vis1)
-        if graph1.div is not None:
-            graph_list.append(graph1.div)
+        vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
         ## Human View ##
         # Detect and visualise duplicates
@@ -538,14 +530,7 @@ def update_duplicates(drop_value, n_clicks):
             current_df = current_df[current_df.duplicate != True]
          
             ## Machine View ##
-            # Display a parallel coordinates plot
-            vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-            # Populate vis_objects list for referring back to the visualisations
-            vis_objects.append(vis1)
-            # Append the graph, wrapped in a Div to track clicks, to graph_list
-            graph1 = Graph_component(vis1)
-            if graph1.div is not None:
-                graph_list.append(graph1.div)
+            vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
             ## Human View ##
             # Detect and visualise duplicates
@@ -560,10 +545,6 @@ def update_duplicates(drop_value, n_clicks):
                 temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                 current_df.intent = extract_intent(temp_vis.columns)
                 vis2 = Vis(len(vis_objects), current_df, enhance='duplicate')
-                # new_div = html.Div(children=[
-                #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                # ])
-                # return [new_div]
             # Populate vis_objects list for referring back to the visualisations
             vis_objects.append(vis2)
             # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -622,16 +603,7 @@ def render_outliers(n_clicks):
         human_previous = vis_objects[-1]
         
         ## Machine View ##
-        # Display a parallel coordinates plot
-        vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-        # Populate vis_objects list for referring back to the visualisations
-        vis_objects.append(vis1)
-        # Append the graph, wrapped in a Div to track clicks, to graph_list
-        graph1 = Graph_component(vis1)
-        if graph1.div is not None:
-            graph_list.append(graph1.div)
-        else:
-            print('No recommendations available. Please upload data first.')
+        vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
         ## Human View ##
         # Detect and visualise outliers
@@ -649,10 +621,6 @@ def render_outliers(n_clicks):
             temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
             current_df.intent = extract_intent(temp_vis.columns)
             vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-            # new_div = html.Div(children=[
-            #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-            # ])
-            # return [new_div]
         # Populate vis_objects list for referring back to the visualisations
         vis_objects.append(vis2)
         # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -707,14 +675,7 @@ def update_outliers(drop_value, n_clicks):
                 return dash.no_update         
             else:
                 ## Machine View ##
-                # Display a parallel coordinates plot
-                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis1)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph1 = Graph_component(vis1)
-                if graph1.div is not None:
-                    graph_list.append(graph1.div)
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
                 if 'more' == drop_value[-1]:
                     selected_option = 'Find more outliers'
@@ -741,10 +702,6 @@ def update_outliers(drop_value, n_clicks):
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                    # new_div = html.Div(children=[
-                    #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                    # ])
-                    # return [new_div]
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
                 # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -808,14 +765,7 @@ def update_outliers_2(drop_value, n_clicks):
                 current_df = current_df[current_df.outlier != True]
                 
                 ## Machine View ##
-                # Display a parallel coordinates plot
-                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis1)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph1 = Graph_component(vis1)
-                if graph1.div is not None:
-                    graph_list.append(graph1.div)
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
                 ## Human View ##
                 # Detect and visualise outliers
@@ -833,10 +783,6 @@ def update_outliers_2(drop_value, n_clicks):
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                    # new_div = html.Div(children=[
-                    #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                    # ])
-                    # return [new_div]
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
                 # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -880,10 +826,6 @@ def update_outliers_2(drop_value, n_clicks):
                         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         current_df.intent = extract_intent(temp_vis.columns)
                         vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                        # new_div = html.Div(children=[
-                        #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                        # ])
-                        # return [new_div]
                     # Populate vis_objects list for referring back to the visualisations
                     vis_objects.append(vis2)
                     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -928,10 +870,6 @@ def update_outliers_2(drop_value, n_clicks):
                             temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                             current_df.intent = extract_intent(temp_vis.columns)
                             vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                            # new_div = html.Div(children=[
-                            #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                            # ])
-                            # return [new_div]
                     except AttributeError as e:
                         print(e)
                         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
@@ -1001,14 +939,7 @@ def update_outliers_3(drop_value, n_clicks):
                 current_df = current_df[current_df.outlier != True]
                 
                 ## Machine View ##
-                # Display a parallel coordinates plot
-                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis1)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph1 = Graph_component(vis1)
-                if graph1.div is not None:
-                    graph_list.append(graph1.div)
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
                 ## Human View ##
                 # Detect and visualise outliers
@@ -1026,10 +957,6 @@ def update_outliers_3(drop_value, n_clicks):
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                    # new_div = html.Div(children=[
-                    #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                    # ])
-                    # return [new_div]
                 # Populate vis_objects list for referring back to the visualisations
                 vis_objects.append(vis2)
                 # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -1040,14 +967,7 @@ def update_outliers_3(drop_value, n_clicks):
                     print('No recommendations available. Please upload data first.')
             else:
                 ## Machine View ##
-                # Display a parallel coordinates plot
-                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis1)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph1 = Graph_component(vis1)
-                if graph1.div is not None:
-                    graph_list.append(graph1.div)
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
                 # Access the last visualisation rendered on the right (human view)
                 human_previous = vis_objects[-1]
@@ -1073,10 +993,6 @@ def update_outliers_3(drop_value, n_clicks):
                         # temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         # current_df.intent = extract_intent(temp_vis.columns)
                         # vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                #       #  new_div = html.Div(children=[
-                #       #      html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                #       #  ])
-                #       #  return [new_div]
                 #     # Populate vis_objects list for referring back to the visualisations
                 #     vis_objects.append(vis2)
                 #     # Append the graph, wrapped in a Div to track clicks, to graph_list
@@ -1120,10 +1036,6 @@ def update_outliers_3(drop_value, n_clicks):
                         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         current_df.intent = extract_intent(temp_vis.columns)
                         vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                        # new_div = html.Div(children=[
-                        #     html.P(f'There are currently no visualisations available.', style={'color': 'black'})
-                        # ])
-                        # return [new_div]
                 except AttributeError as e:
                     print(e)
                     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
