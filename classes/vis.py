@@ -88,9 +88,10 @@ class Vis:
                         try:
                             print("**********self.lux_vis: ", self.lux_vis, "****************")
                             fig_code = self.lux_vis.to_matplotlib()
-                        except ValueError:
+                        except ValueError or AttributeError:
                             print('Error in to_matplotlib()')
                             fig_code = ''
+                            self.missing_value_flag = True
                         fixed_fig_code = fix_lux_code(fig_code)
                         try:
                             exec(fixed_fig_code)
