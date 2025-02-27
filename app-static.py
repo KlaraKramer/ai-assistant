@@ -35,6 +35,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_
 # Global variables to keep track of progress
 stage = 'data-loading'
 step = 0
+action_log = []
 
 # Global variables to store the original uploaded DataFrame and the current state of it
 uploaded_df = None
@@ -61,7 +62,7 @@ outlier_contamination_history = []
 # # Global variable to store selected columns from clicking on a figure
 # selected_columns = ()
 
-# Local helper function
+# Local helper functions
 def render_machine_view(vis_objects, df, graph_components):
     ## Machine View ##
     # Display a parallel coordinates plot
@@ -73,6 +74,15 @@ def render_machine_view(vis_objects, df, graph_components):
     if graph1.div is not None:
         graph_components.append(graph1.div)
     return vis_objects, graph_components
+
+def log(message, type):
+    global action_log
+    entry = ''
+    if type == 'system':
+        entry = 'SYSTEM NOTE: ' + message
+    elif type == 'user':
+        entry = 'USER ACTION: ' + message
+    action_log.append(entry)
 
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
@@ -218,11 +228,12 @@ dashboard = html.Div(id='dashboard', children=[
         ),
         dcc.Download(id='download-dataframe-csv'),
         dbc.Button(
-            'Download Dashboard',
+            'Download Action Log',
             id='download-btn',
             className='btn btn-success',
             style={'display': 'none'}
-        )
+        ),
+        dcc.Download(id='download-log')
     ]) # style={'justify': 'center', 'align': 'center'})
 ], style=DASHBOARD_STYLE)
 
@@ -253,6 +264,7 @@ def update_ui(contents, filename):
 
     # If no data has been uploaded yet
     if contents is None:
+        log('Unsupported file type', 'system')
         return html.Div('Unsupported file type.'), {'display': 'block'}
 
     # Handle file upload (uploading data)
@@ -290,6 +302,7 @@ def update_ui(contents, filename):
             else:
                 print("No recommendations available. Please upload data first.")
 
+            log('Data uploaded', 'system')
             # Return all components
             graph_div = show_side_by_side(graph_components)
             return (
@@ -326,13 +339,16 @@ def render_missing_values(n_clicks):
         if isinstance(missing_df, pd.Series):
             missing_df = missing_df.to_frame()
 
+        message = str(missing_count) + ' missing values were detected'
+        log(message, 'system')
+
         if missing_count == 0:
             new_div = html.Div(children=[
-                html.P(f'{missing_count} missing values were detected', style={'color': 'green'}),
+                html.P(message, style={'color': 'green'}),
             ])
         else:
             new_div = html.Div(children=[
-                html.P(f'{missing_count} missing values were detected', style={'color': 'red'}),
+                html.P(message, style={'color': 'red'}),
                 dbc.Table.from_dataframe(missing_df, striped=True, bordered=True, hover=True),
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -406,11 +422,14 @@ def update_missing_values(drop_value, n_clicks):
             graph_list.append(graph2.div)
         else:
             print('No recommendations available. Please upload data first.')
+        log(selected_option, 'user')
+        message = str(missing_count) + ' missing values were detected'
+        log(message, 'system')
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
             html.P(f'Selected action: {selected_option}'),
-            html.P(f'{missing_count} missing values were detected', style={'color': 'green'}),
+            html.P(message, style={'color': 'green'}),
             graph_div
         ])
         return [new_div]
@@ -435,6 +454,7 @@ def render_duplicates(n_clicks):
     graph_list = []
     # First render
     if n_clicks > 0 and current_df is not None:
+        log('Finish Missing Value Handling', 'user')
         stage = 'duplicate-removal'
         step += 1
         # Access the last visualisation rendered on the right (human view)
@@ -452,8 +472,10 @@ def render_duplicates(n_clicks):
         vis2 = Vis(len(vis_objects), right_df, enhance='duplicate')
         # Catch the missing value error if applicable:
         if vis2.missing_value_flag:
+            message = 'ERROR: Visualisations cannot be displayed due to missing values in the data. Please revisit the "Missing Value Handling" step above, and click the "Finish Missing Value Handling" button when done.'
+            log(message, 'system')
             new_div = html.Div(children=[
-                html.P(f'ERROR: Visualisations cannot be displayed due to missing values in the data. Please revisit the "Missing Value Handling" step above, and click the "Finish Missing Value Handling" button when done.', style={'color': 'red'})
+                html.P(message, style={'color': 'red'})
             ])
             return [new_div]
         # Populate vis_objects list for referring back to the visualisations
@@ -471,10 +493,12 @@ def render_duplicates(n_clicks):
         else:
             show_dropdown = {'display': 'block'}
             text_col = {'color': 'red'}
+        message = str(dups_count) + ' duplicated rows were detected'
+        log(message, 'system')
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-            html.P(f'{dups_count} duplicated rows were detected', style=text_col),
+            html.P(message, style=text_col),
             graph_div,
             dcc.Dropdown(
                 placeholder='Select an action to take', 
@@ -513,9 +537,12 @@ def update_duplicates(drop_value, n_clicks):
             highlight_df, highlight_count = detect_duplicates(current_df, keep=False)
             highlight_df = highlight_df[highlight_df.duplicate != False]
             highlight_df = highlight_df.sort_values(by=[highlight_df.columns[2], highlight_df.columns[3], highlight_df.columns[4]])
+            log(selected_option, 'user')
+            message = str(dups_count) + ' duplicated rows were detected'
+            log(message, 'system')
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{dups_count} duplicated rows were detected', style={'color': 'red'}),
+                html.P(message, style={'color': 'red'}),
                 dbc.Table.from_dataframe(highlight_df, striped=True, bordered=True, hover=True),
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -560,11 +587,14 @@ def update_duplicates(drop_value, n_clicks):
             else:
                 show_dropdown = {'display': 'block'}
                 text_col = {'color': 'red'}
+            log(selected_option, 'user')
+            message = str(dups_count) + ' duplicated rows were detected'
+            log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{dups_count} duplicated rows were detected', style=text_col),
+                html.P(message, style=text_col),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -597,6 +627,7 @@ def render_outliers(n_clicks):
     graph_list = []
     # First render
     if n_clicks > 0 and current_df is not None:
+        log('Finish Duplicate Removal', 'user')
         stage = 'outlier-handling'
         step += 1
         # Access the last visualisation rendered on the right (human view)
@@ -628,10 +659,12 @@ def render_outliers(n_clicks):
         if graph2.div is not None:
             graph_list.append(graph2.div)
 
+        message = str(outlier_count) + ' outlier values were detected'
+        log(message, 'system')
         # Return all components
         graph_div = show_side_by_side(graph_list)
         new_div = html.Div(children=[
-                html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
+                html.P(message, style={'color': 'red'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -744,11 +777,14 @@ def update_outliers(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
 
+            log(selected_option, 'user')
+            message = str(outlier_count) + ' outlier values were detected'
+            log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{outlier_count} outlier values were detected', style={'color': 'red'}),
+                html.P(message, style={'color': 'red'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -787,7 +823,6 @@ def update_outliers_2(drop_value, n_clicks):
             step += 1
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
-            print('============ drop_value[-1] (2): ', drop_value[-1], '==================')
 
             if 'finish' == drop_value[-1]:
                 return dash.no_update
@@ -919,11 +954,14 @@ def update_outliers_2(drop_value, n_clicks):
                     else:
                         print('No recommendations available. Please upload data first.')
 
+            log(selected_option, 'user')
+            message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
+            log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{outlier_count} new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.', style={'color': 'green'}),
+                html.P(message, style={'color': 'green'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -958,7 +996,6 @@ def update_outliers_3(drop_value, n_clicks):
         return dash.no_update
     else:
         if n_clicks > 0 and current_df is not None:
-            print('============ drop_value[-1] (3): ', drop_value[-1], '==================')
             stage = 'outlier-handling-3'
             step += 1
             # Access the last visualisation rendered on the right (human view)
@@ -1086,11 +1123,14 @@ def update_outliers_3(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
 
+            log(selected_option, 'user')
+            message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
+            log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(f'{outlier_count} new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.', style={'color': 'green'}),
+                html.P(message, style={'color': 'green'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
@@ -1252,6 +1292,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
+        log('Finish Outlier Handling', 'user')
     if 'csv-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
@@ -1306,6 +1347,32 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
 def func(n_clicks):
     global file_name
     return dcc.send_data_frame(downloadable_data(current_df).to_csv, file_name)
+
+# Callback to download log into a txt file
+@app.callback(
+    Output(component_id='download-log', component_property='data'),
+    Input(component_id='download-btn', component_property='n_clicks'),
+    prevent_initial_call=True,
+)
+def save_list_to_file(n_clicks):
+    global file_name
+    global action_log
+    # Create a suitable filename
+    filename = file_name[:-4]
+    filename = filename + '_log.txt'
+    # Convert the list into a file-like object
+    file_content = "\n".join(action_log)  # Each item on a new line
+    file_obj = io.StringIO(file_content)
+    return dict(content=file_obj.getvalue(), filename=filename)
+
+    # try:
+    #     with open(filename, 'w', encoding='utf-8') as f:
+    #         for item in action_log:
+    #             f.write(f'{item}\n')  # Write each item on a new line
+    #     return f"File '{os.path.abspath(filename)}' saved successfully!"
+    # except Exception as e:
+    #     return f"Error: {str(e)}"
+    # return ''
 
 # Expose the Flask server
 server = app.server
