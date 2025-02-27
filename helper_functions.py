@@ -168,10 +168,10 @@ def extract_intent(lst):
     return [first_item, second_item]
 
 def determine_contamination(cont_history, more):
-    contamination = 0.2
+    contamination = 0.15
     if len(cont_history) > 0:
         if more is True:
-            contamination = cont_history[-1] * 1.9
+            contamination = cont_history[-1] * 1.4
             if contamination > 0.5:
                 contamination = 0.5
         else:

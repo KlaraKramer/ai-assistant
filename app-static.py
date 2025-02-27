@@ -749,15 +749,11 @@ def update_outliers(drop_value, n_clicks):
                         # Increase contamination parameter to find more outliers
                         outlier_contamination = determine_contamination(outlier_contamination_history, True)
                         outlier_contamination_history.append(outlier_contamination)
-                        # outlier_contamination = outlier_contamination_history[-1] + 0.1
-                        # outlier_contamination_history.append(outlier_contamination)
                     elif 'less' in drop_value[-1]:
                         selected_option = 'Find less outliers'
                         # Decrease contamination parameter to find more outliers
                         outlier_contamination = determine_contamination(outlier_contamination_history, False)
                         outlier_contamination_history.append(outlier_contamination)
-                        # outlier_contamination = outlier_contamination_history[-1] - 0.1
-                        # outlier_contamination_history.append(outlier_contamination)
                     else:
                         return dash.no_update
                     
@@ -844,8 +840,8 @@ def update_outliers_2(drop_value, n_clicks):
                     
                     ## Human View ##
                     # Detect and visualise outliers
-                    outlier_contamination_history = [0.2]
                     outlier_contamination = outlier_contamination_history[-1]
+                    outlier_contamination_history.append(outlier_contamination)
                     current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination)
                     current_df = lux.LuxDataFrame(current_df)
 
@@ -882,7 +878,6 @@ def update_outliers_2(drop_value, n_clicks):
                     elif 'remove' == drop_value[-1] or 'accept' == drop_value[-1]:
                         selected_option = 'Remove the detected outliers'
                         current_df = current_df[current_df.outlier != True]
-                        # outlier_contamination = 0.2
                         outlier_contamination = outlier_contamination_history[-1]
                         outlier_contamination_history.append(outlier_contamination)
                     else:
