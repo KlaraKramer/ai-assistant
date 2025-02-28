@@ -14,6 +14,7 @@ import os
 import numpy as np
 
 from helper_functions import *
+from cleanliness_metric import determine_dirtiness
 from outlier_isolation_forest import *
 from duplicate_detection import *
 from missing_value_detection import *
@@ -84,6 +85,14 @@ def log(message, type):
         entry = 'USER ACTION: ' + message
     action_log.append(entry)
 
+def skip_outlier_handling(n_clicks, keep='remaining'):
+    if n_clicks > 0:
+        if keep == 'all':
+            log('Keep all outliers', 'user')
+        else:
+            log('Keep remaining outliers', 'user')
+        update_progress(0, 0, 0, 0, 10, 0, 0)
+
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
 # styling the progress bar
 PROGRESS_BAR_STYLE = {
@@ -116,6 +125,11 @@ progress_bar = html.Div(
             vertical=True,
             pills=True,
         ),
+        # html.Br(),
+        # html.Div(
+        #     id='dirtiness-status', 
+        #     style={'font': 'bold', 'display': 'none'}
+        # )
     ],
     style=PROGRESS_BAR_STYLE,
 )
@@ -217,6 +231,11 @@ dashboard = html.Div(id='dashboard', children=[
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
+            # dbc.Button(
+            #     '[Necessary dummy button]',
+            #     id='dummy-btn',
+            #     style={'display': 'none'}
+            # )
         ]),
 
         html.H5('Download Section', id='download-header', style={'display': 'none'}),
@@ -319,7 +338,8 @@ def update_ui(contents, filename):
 @app.callback(
     [Output(component_id='missing-output', component_property='children')],
     [Input(component_id='start-button', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='missing-end-btn', component_property='disabled'), True, False)]
 )
 def render_missing_values(n_clicks):
     global current_df
@@ -364,7 +384,8 @@ def render_missing_values(n_clicks):
     [Output(component_id='missing-output-1', component_property='children')],
     [Input(component_id={'type': 'missing-value-removal', 'index': ALL}, component_property='value')],
     [State(component_id='start-button', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='missing-end-btn', component_property='disabled'), True, False)]
 )
 def update_missing_values(drop_value, n_clicks):
     global current_df
@@ -442,7 +463,8 @@ def update_missing_values(drop_value, n_clicks):
 @app.callback(
     [Output(component_id='duplicate-output', component_property='children')],
     [Input(component_id='missing-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='duplicate-end-btn', component_property='disabled'), True, False)]
 )
 def render_duplicates(n_clicks):
     global current_df
@@ -515,7 +537,8 @@ def render_duplicates(n_clicks):
     [Output(component_id='duplicate-output-1', component_property='children')],
     [Input(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='value')],
     [State(component_id='missing-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='duplicate-end-btn', component_property='disabled'), True, False)]
 )
 def update_duplicates(drop_value, n_clicks):
     global current_df
@@ -614,7 +637,8 @@ def update_duplicates(drop_value, n_clicks):
 @app.callback(
     [Output(component_id='outlier-output', component_property='children')],
     [Input(component_id='duplicate-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
 )
 def render_outliers(n_clicks):
     global current_df
@@ -669,7 +693,7 @@ def render_outliers(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
-                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept-0': 'Remove the detected outliers'}
+                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept-0': 'Remove the detected outliers', 'keep': 'Keep all outliers'}
                 )
             ])
         return [new_div]
@@ -680,7 +704,8 @@ def render_outliers(n_clicks):
     [Output(component_id='outlier-output-1', component_property='children')],
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
 )
 def update_outliers(drop_value, n_clicks):
     global current_df
@@ -692,7 +717,7 @@ def update_outliers(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers'}
+    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers', 'keep-0': 'Keep all outliers'}
 
     if n_clicks is None or None in drop_value or stage != 'outlier-handling':    
         return dash.no_update
@@ -702,13 +727,20 @@ def update_outliers(drop_value, n_clicks):
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
 
-            if 'next' == drop_value[-1] or 'accept' == drop_value[-1]:
+            if 'keep-0' == drop_value[-1]:
+                skip_outlier_handling(1, keep='all')
+                return dash.no_update
+            elif 'keep' == drop_value[-1]:
+                skip_outlier_handling(1)
+                return dash.no_update
+            elif 'next' == drop_value[-1] or 'accept' == drop_value[-1]:
                 stage = 'outlier-handling-2'
                 update_outliers_2(drop_value, n_clicks)   
-                return dash.no_update     
+                return dash.no_update
             elif 'accept-0' == drop_value[-1]:
                 # Just got sent here from render_outliers
                 options['next'] = 'Show remaining outliers in alternative visualisation'
+                options['keep'] = 'Keep remaining outliers'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
@@ -801,7 +833,8 @@ def update_outliers(drop_value, n_clicks):
     [Output(component_id='outlier-output-2', component_property='children')],
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
 )
 def update_outliers_2(drop_value, n_clicks):
     global current_df
@@ -813,7 +846,7 @@ def update_outliers_2(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more-2': 'Find more outliers', 'less-2': 'Find less outliers', 'remove': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
+    options={'more-2': 'Find more outliers', 'less-2': 'Find less outliers', 'remove': 'Remove the detected outliers', 'keep': 'Keep remaining outliers'}# , 'finish': 'Finish outlier handling'}
 
     if n_clicks is None or None in drop_value or len(drop_value) < 2 or stage != 'outlier-handling-2':    
         return dash.no_update
@@ -824,9 +857,12 @@ def update_outliers_2(drop_value, n_clicks):
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
 
-            if 'finish' == drop_value[-1]:
+            # if 'finish' == drop_value[-1]:
+            #     return dash.no_update
+            #     # pass
+            if 'keep' == drop_value[-1]:
+                skip_outlier_handling(1)
                 return dash.no_update
-                # pass
             elif 'accept' == drop_value[-1]:
                 # Just got sent here from update_outliers_1
                 # options['next-2'] = 'Show remaining outliers in alternative visualisation'
@@ -978,7 +1014,8 @@ def update_outliers_2(drop_value, n_clicks):
     [Output(component_id='outlier-output-3', component_property='children')],
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
 )
 def update_outliers_3(drop_value, n_clicks):
     global current_df
@@ -990,7 +1027,7 @@ def update_outliers_3(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more-3': 'Find more outliers', 'less-3': 'Find less outliers', 'remove-3': 'Remove the detected outliers'}# , 'finish': 'Finish outlier handling'}
+    options={'more-3': 'Find more outliers', 'less-3': 'Find less outliers', 'remove-3': 'Remove the detected outliers', 'keep': 'Keep remaining outliers'}# , 'finish': 'Finish outlier handling'}
 
     if n_clicks is None or None in drop_value or len(drop_value) < 2  or stage != 'outlier-handling-3':    
         return dash.no_update
@@ -1001,9 +1038,12 @@ def update_outliers_3(drop_value, n_clicks):
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
 
-            if 'finish' == drop_value[-1]:
+            # if 'finish' == drop_value[-1]:
+            #     return dash.no_update
+            #     # pass
+            if 'keep' == drop_value[-1]:
+                skip_outlier_handling(1)
                 return dash.no_update
-                # pass
             elif 'remove' == drop_value[-1] or 'remove-3' == drop_value[-1]:
                 # Just got sent here from update_outliers_2, or it is the final removal
                 # options['next-3'] = 'Show remaining outliers in alternative visualisation'
@@ -1142,7 +1182,6 @@ def update_outliers_3(drop_value, n_clicks):
         else:
             return dash.no_update
 
-
 # # Callback to handle graph clicks
 # @app.callback(
 #     [Output(component_id='vis-selection-output', component_property='children'),
@@ -1235,6 +1274,8 @@ def update_outliers_3(drop_value, n_clicks):
      Output(component_id='csv-btn', component_property='style'),
      Output(component_id='download-header', component_property='style'),
      Output(component_id='download-btn', component_property='style')],
+    #  Output(component_id='dirtiness-status', component_property='children'),
+    #  Output(component_id='dirtiness-status', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='start-button', component_property='n_clicks'),
      Input(component_id='missing-end-btn', component_property='n_clicks'),
@@ -1250,6 +1291,9 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     load_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red'
     missing_style, dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
+    # dirtiness_text = 'Data dirtiness (0 = clean):\n'
+    # dirtiness_style = {'font': 'bold', 'display': 'none'}
+
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if 'start-button' in changed_id:
@@ -1262,7 +1306,8 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'none'}
         out_style = {'display': 'none'}
         download_style = {'display': 'none'}
-    if 'missing-end-btn' in changed_id:
+        # dirtiness = determine_dirtiness()
+    elif 'missing-end-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'red'
@@ -1272,7 +1317,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'block'}
         out_style = {'display': 'none'}
         download_style = {'display': 'none'}
-    if 'duplicate-end-btn' in changed_id:
+    elif 'duplicate-end-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'green'
@@ -1282,7 +1327,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'none'}
-    if 'outlier-end-btn' in changed_id:
+    elif 'outlier-end-btn' in changed_id or click_out == 10:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'green'
@@ -1293,7 +1338,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
         log('Finish Outlier Handling', 'user')
-    if 'csv-btn' in changed_id:
+    elif 'csv-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'green'
@@ -1303,7 +1348,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
-    if 'download-btn' in changed_id:
+    elif 'download-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'green'
@@ -1315,7 +1360,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         download_style = {'display': 'block'}
     
     # If a new file is uploaded, reset dup_colour and out_colour to 'red'
-    if ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
+    elif ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
         load_colour = 'green'
         miss_colour = 'red'
         dup_colour = 'red'
@@ -1323,7 +1368,9 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         down_colour = 'red'
         dup_style = {'display': 'none'}
         out_style = {'display': 'none'}
-    
+
+    print('out_colour: ', out_colour, ', download_style: ', download_style)
+
     return (
         {'background-color': load_colour, 'color': 'white'},
         {'background-color': miss_colour, 'color': 'white'},
@@ -1365,14 +1412,6 @@ def save_list_to_file(n_clicks):
     file_obj = io.StringIO(file_content)
     return dict(content=file_obj.getvalue(), filename=filename)
 
-    # try:
-    #     with open(filename, 'w', encoding='utf-8') as f:
-    #         for item in action_log:
-    #             f.write(f'{item}\n')  # Write each item on a new line
-    #     return f"File '{os.path.abspath(filename)}' saved successfully!"
-    # except Exception as e:
-    #     return f"Error: {str(e)}"
-    # return ''
 
 # Expose the Flask server
 server = app.server
