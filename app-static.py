@@ -378,7 +378,8 @@ def render_missing_values(n_clicks):
     [Input(component_id={'type': 'missing-value-removal', 'index': ALL}, component_property='value')],
     [State(component_id='start-button', component_property='n_clicks')],
     prevent_initial_call=True,
-    running=[(Output(component_id='missing-end-btn', component_property='disabled'), True, False)]
+    running=[(Output(component_id='missing-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'missing-value-removal', 'index': ALL}, component_property='disabled'), True, False)]
 )
 def update_missing_values(drop_value, n_clicks):
     global current_df
@@ -531,7 +532,8 @@ def render_duplicates(n_clicks):
     [Input(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='value')],
     [State(component_id='missing-end-btn', component_property='n_clicks')],
     prevent_initial_call=True,
-    running=[(Output(component_id='duplicate-end-btn', component_property='disabled'), True, False)]
+    running=[(Output(component_id='duplicate-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'duplicate-removal', 'index': ALL}, component_property='disabled'), True, False)]
 )
 def update_duplicates(drop_value, n_clicks):
     global current_df
@@ -698,7 +700,8 @@ def render_outliers(n_clicks):
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
     prevent_initial_call=True,
-    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='disabled'), True, False)]
 )
 def update_outliers(drop_value, n_clicks):
     global current_df
@@ -821,7 +824,8 @@ def update_outliers(drop_value, n_clicks):
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
     prevent_initial_call=True,
-    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='disabled'), True, False)]
 )
 def update_outliers_2(drop_value, n_clicks):
     global current_df
@@ -996,7 +1000,8 @@ def update_outliers_2(drop_value, n_clicks):
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     [State(component_id='duplicate-end-btn', component_property='n_clicks')],
     prevent_initial_call=True,
-    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False)]
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='disabled'), True, False)]
 )
 def update_outliers_3(drop_value, n_clicks):
     global current_df
