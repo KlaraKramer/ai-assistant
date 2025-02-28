@@ -37,6 +37,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_
 stage = 'data-loading'
 step = 0
 action_log = []
+download_completion = 0
 
 # Global variables to store the original uploaded DataFrame and the current state of it
 uploaded_df = None
@@ -1286,6 +1287,8 @@ def update_outliers_3(drop_value, n_clicks):
     prevent_initial_call=True
 )
 def update_progress(contents, click_start, click_miss, click_dup, click_out, click_down, click_down_dash):
+    global download_completion
+
     ctx = dash.callback_context
     # Default colours and display values
     load_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red'
@@ -1348,17 +1351,22 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
+        download_completion += 0.5
     elif 'download-btn' in changed_id:
         load_colour = 'green'
         miss_colour = 'green'
         dup_colour = 'green'
         out_colour = 'green'
-        down_colour = 'green'
+        down_colour = 'red'
         missing_style = {'display': 'block'}
         dup_style = {'display': 'block'}
         out_style = {'display': 'block'}
         download_style = {'display': 'block'}
+        download_completion += 0.5
     
+    if download_completion >= 1:
+        down_colour = 'green'
+        
     # If a new file is uploaded, reset dup_colour and out_colour to 'red'
     elif ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
         load_colour = 'green'
