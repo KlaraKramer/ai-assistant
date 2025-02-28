@@ -37,7 +37,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_
 stage = 'data-loading'
 step = 0
 action_log = []
-download_completion = 0
+download_completion = [0, 0]
 # Default colours and display values
 load_colour, miss_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red', 'red'
 missing_style, dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
@@ -1300,10 +1300,12 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         out_colour = 'green'
         download_style = {'display': 'block'}
         log('Finish Outlier Handling', 'user')
-    elif 'csv-btn' in changed_id or 'download-btn' in changed_id:
-        download_completion += 0.5
+    elif 'csv-btn' in changed_id:
+        download_completion[0] = 1
+    elif 'download-btn' in changed_id:
+        download_completion[1] = 1
     
-    if download_completion >= 1:
+    if download_completion[0] == 1 and download_completion[1] == 1:
         down_colour = 'green'
 
     if None not in drop_value and len(drop_value) >= 1:
