@@ -40,7 +40,7 @@ action_log = []
 download_completion = [0, 0]
 # Default colours and display values
 load_colour, miss_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red', 'red'
-missing_style, dup_style, out_style, download_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+missing_style, dup_style, out_style, download_style, completion_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
 
 # Global variables to store the original uploaded DataFrame and the current state of it
@@ -122,6 +122,15 @@ progress_bar = html.Div(
             ],
             vertical=True,
             pills=True,
+        ),
+        html.Hr(),
+        html.Div(
+            children=[
+                html.P('Congratulations on finishing the data cleaning.', style={'font': 'bold', 'color': 'white'}),
+                html.P('Please load the page new to upload a new dataset.', style={'font': 'bold', 'color': 'white'})
+            ],
+            id='completion-message',
+            style={'display': 'none'}
         )
     ],
     style=PROGRESS_BAR_STYLE,
@@ -1253,7 +1262,8 @@ def update_outliers_3(drop_value, n_clicks):
      Output(component_id='outlier-end-btn', component_property='style'),
      Output(component_id='csv-btn', component_property='style'),
      Output(component_id='download-header', component_property='style'),
-     Output(component_id='download-btn', component_property='style')],
+     Output(component_id='download-btn', component_property='style'),
+     Output(component_id='completion-message', component_property='style')],
     #  Output(component_id='dirtiness-status', component_property='children'),
     #  Output(component_id='dirtiness-status', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
@@ -1277,6 +1287,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     global dup_style
     global out_style
     global download_style
+    global completion_style
 
     ctx = dash.callback_context
 
@@ -1307,6 +1318,7 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     
     if download_completion[0] == 1 and download_completion[1] == 1:
         down_colour = 'green'
+        completion_style = {'display': 'block'}
 
     if None not in drop_value and len(drop_value) >= 1:
         if 'keep-0' == drop_value[-1]:
@@ -1343,7 +1355,8 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         out_style,
         download_style,
         download_style,
-        download_style
+        download_style,
+        completion_style
     )
 
 # Callback to download cleaned dataset into a csv file
