@@ -40,7 +40,7 @@ action_log = []
 download_completion = [0, 0]
 # Default colours and display values
 load_colour, miss_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red', 'red'
-missing_style, dup_style, out_style, download_style, completion_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
+missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
 
 # Global variables to store the original uploaded DataFrame and the current state of it
@@ -233,14 +233,19 @@ dashboard = html.Div(id='dashboard', children=[
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
-            # dbc.Button(
-            #     '[Necessary dummy button]',
-            #     id='dummy-btn',
-            #     style={'display': 'none'}
-            # )
+            html.P('You have completed the data engineering process. Please now use the below buttons to download the cleaned data and the action log.', 
+                   id='out-end-info', 
+                   style={'display': 'none'}
+            )
         ]),
 
         html.H5('Download Section', id='download-header', style={'display': 'none'}),
+        # The below is only for evaluation purposes
+        html.P(
+            'Please use these buttons only at the end of the process, or if your time runs out.', 
+            id='download-info',
+            style={'display': 'none'}
+        ),
         dbc.Button(
             'Download Cleaned Data',
             id='csv-btn',
@@ -248,6 +253,7 @@ dashboard = html.Div(id='dashboard', children=[
             style={'display': 'none'}
         ),
         dcc.Download(id='download-dataframe-csv'),
+        html.Br(),
         dbc.Button(
             'Download Action Log',
             id='download-btn',
@@ -1260,8 +1266,10 @@ def update_outliers_3(drop_value, n_clicks):
      Output(component_id='missing-end-btn', component_property='style'),
      Output(component_id='duplicate-end-btn', component_property='style'),
      Output(component_id='outlier-end-btn', component_property='style'),
+     Output(component_id='out-end-info', component_property='style'),
      Output(component_id='csv-btn', component_property='style'),
      Output(component_id='download-header', component_property='style'),
+     Output(component_id='download-info', component_property='style'),
      Output(component_id='download-btn', component_property='style'),
      Output(component_id='completion-message', component_property='style')],
     #  Output(component_id='dirtiness-status', component_property='children'),
@@ -1286,7 +1294,9 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     global missing_style
     global dup_style
     global out_style
+    global info_style
     global download_style
+    global down_info_style
     global completion_style
 
     ctx = dash.callback_context
@@ -1299,6 +1309,9 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
     if 'start-button' in changed_id:
         load_colour = 'green'
         missing_style = {'display': 'block'}
+        # The below is only for evaluation purposes
+        download_style = {'display': 'block'}
+        down_info_style = {'display': 'block'}
         # dirtiness = determine_dirtiness()
     elif 'missing-end-btn' in changed_id:
         miss_colour = 'green'
@@ -1311,6 +1324,9 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         out_colour = 'green'
         download_style = {'display': 'block'}
         log('Finish Outlier Handling', 'user')
+        # The below is only for evaluation purposes
+        down_info_style = {'display': 'none'}
+        info_style = {'display': 'block'}
     elif 'csv-btn' in changed_id:
         download_completion[0] = 1
     elif 'download-btn' in changed_id:
@@ -1325,11 +1341,17 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
             log('Keep all outliers', 'user')
             out_colour = 'green'
             download_style = {'display': 'block'}
+            # The below is only for evaluation purposes
+            down_info_style = {'display': 'none'}
+            info_style = {'display': 'block'}
             log('Finish Outlier Handling', 'user')
         elif 'keep' == drop_value[-1]:
             log('Keep remaining outliers', 'user')
             out_colour = 'green'
             download_style = {'display': 'block'}
+            # The below is only for evaluation purposes
+            down_info_style = {'display': 'none'}
+            info_style = {'display': 'block'}
             log('Finish Outlier Handling', 'user')
 
     # If a new file is uploaded, reset colours to 'red' and display styles to 'none'
@@ -1342,21 +1364,27 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
         missing_style = {'display': 'none'}
         dup_style = {'display': 'none'}
         out_style = {'display': 'none'}
+        info_style = {'display': 'none'}
         download_style = {'display': 'none'}
 
+    # print('*********** info_style: ', info_style, '****************')
+    # print('*********** down_info_style: ', down_info_style, '*****')
+
     return (
-        {'background-color': load_colour, 'color': 'white'},
-        {'background-color': miss_colour, 'color': 'white'},
-        {'background-color': dup_colour, 'color': 'white'},
-        {'background-color': out_colour, 'color': 'white'},
-        {'background-color': down_colour, 'color': 'white'},
-        missing_style,
-        dup_style,
-        out_style,
-        download_style,
-        download_style,
-        download_style,
-        completion_style
+        {'background-color': load_colour, 'color': 'white'},  # progress-load
+        {'background-color': miss_colour, 'color': 'white'},  # progress-missing
+        {'background-color': dup_colour, 'color': 'white'},   # progress-duplicate
+        {'background-color': out_colour, 'color': 'white'},   # progress-outlier
+        {'background-color': down_colour, 'color': 'white'},  # progress-download
+        missing_style,    # missing-end-btn
+        dup_style,        # duplicate-end-btn
+        out_style,        # outlier-end-btn
+        info_style,       # out-end-info
+        download_style,   # csv-btn
+        download_style,   # download-header
+        down_info_style,  # download-info
+        download_style,   # download-btn
+        completion_style  # completion-message
     )
 
 # Callback to download cleaned dataset into a csv file
