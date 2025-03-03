@@ -43,9 +43,10 @@ load_colour, miss_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'r
 missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
 
-# Global variables to store the original uploaded DataFrame and the current state of it
+# Global variables to store the original uploaded DataFrame, the current state of it, and the previous saved state to enable going back
 uploaded_df = None
 current_df = None
+previous_df = None
 
 # Global variable to store the name of the file currently being used
 file_name = None
@@ -282,6 +283,7 @@ app.layout = dbc.Container([
 def update_ui(contents, filename):
     global uploaded_df
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -308,6 +310,7 @@ def update_ui(contents, filename):
             if 'unnamed_0' in uploaded_df.columns:
                 uploaded_df = uploaded_df.drop('unnamed_0', axis=1)
             current_df = uploaded_df.copy()
+            previous_df = uploaded_df.copy()
             graph_components = []
             # Reset global variables
             vis_objects = []
@@ -381,7 +384,12 @@ def render_missing_values(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'missing-value-removal', 'index': step},
-                    options={'highlight': 'Show rows with missing values', 'delete': 'Delete rows with missing values', 'impute-simple': 'Impute missing values using the univariate mean', 'impute-KNN': 'Impute missing values using the k nearest neighbours'}
+                    options={
+                        'highlight': 'Show rows with missing values', 
+                        'delete': 'Delete rows with missing values', 
+                        'impute-simple': 'Impute missing values using the univariate mean', 
+                        'impute-KNN': 'Impute missing values using the k nearest neighbours'
+                    }
                 )
             ])
         return [new_div]
@@ -398,6 +406,7 @@ def render_missing_values(n_clicks):
 )
 def update_missing_values(drop_value, n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -421,7 +430,11 @@ def update_missing_values(drop_value, n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'missing-value-removal', 'index': step},
-                    options={'delete': 'Delete rows with missing values', 'impute-simple': 'Impute missing values using the univariate mean', 'impute-KNN': 'Impute missing values using the k nearest neighbours'}
+                    options={
+                        'delete': 'Delete rows with missing values', 
+                        'impute-simple': 'Impute missing values using the univariate mean', 
+                        'impute-KNN': 'Impute missing values using the k nearest neighbours'
+                    }
                 )
             ])
             return [new_div]
@@ -434,6 +447,9 @@ def update_missing_values(drop_value, n_clicks):
         elif 'delete' == drop_value[-1]:
             selected_option = 'Delete rows with missing values'
             current_df = current_df[current_df.notnull().all(axis=1)]
+        elif 'undo' == drop_value[-1]:
+            selected_option = 'Undo the last step'
+            current_df = previous_df.copy()
         else:
             return dash.no_update
 
@@ -457,11 +473,36 @@ def update_missing_values(drop_value, n_clicks):
         log(message, 'system')
         # Return all components
         graph_div = show_side_by_side(graph_list)
-        new_div = html.Div(children=[
-            html.P(f'Selected action: {selected_option}'),
-            html.P(message, style={'color': 'green'}),
-            graph_div
-        ])
+        if 'undo' == drop_value[-1]:
+            new_div = html.Div(children=[
+                html.P(f'Selected action: {selected_option}'),
+                html.P(message, style={'color': 'red'}),
+                graph_div,
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'missing-value-removal', 'index': step},
+                    options={
+                        'highlight': 'Show rows with missing values', 
+                        'delete': 'Delete rows with missing values', 
+                        'impute-simple': 'Impute missing values using the univariate mean', 
+                        'impute-KNN': 'Impute missing values using the k nearest neighbours'
+                    }
+                )
+            ])
+        else:
+            new_div = html.Div(children=[
+                html.P(f'Selected action: {selected_option}'),
+                html.P(message, style={'color': 'green'}),
+                graph_div,
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'missing-value-removal', 'index': step},
+                    options={
+                        'undo': 'Undo the last step'
+                    }
+                ),
+                html.Br()
+            ])
         return [new_div]
         
     else:
@@ -477,6 +518,7 @@ def update_missing_values(drop_value, n_clicks):
 )
 def render_duplicates(n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -488,6 +530,7 @@ def render_duplicates(n_clicks):
         log('Finish Missing Value Handling', 'user')
         stage = 'duplicate-removal'
         step += 1
+        previous_df = current_df.copy()
         # Access the last visualisation rendered on the right (human view)
         human_previous = vis_objects[-1]
         
@@ -552,6 +595,7 @@ def render_duplicates(n_clicks):
 )
 def update_duplicates(drop_value, n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -585,60 +629,70 @@ def update_duplicates(drop_value, n_clicks):
             ])
             return [new_div]
         
+        elif 'undo' == drop_value[-1]:
+            selected_option = 'Undo the last step'
+            current_df = previous_df.copy()
         elif 'delete' == drop_value[-1]:
             selected_option = 'Delete duplicates'
             current_df = current_df[current_df.duplicate != True]
+        else:
+            return dash.no_update
          
-            ## Machine View ##
-            vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
+        ## Machine View ##
+        vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-            ## Human View ##
-            # Detect and visualise duplicates
-            current_df, dups_count = detect_duplicates(current_df)
-            right_df = current_df.copy()
-            right_df.intent = extract_intent(human_previous.columns)
-            # Display the second visualisation
-            vis2 = Vis(len(vis_objects), right_df)
-            # Catch the missing value error if applicable:
-            if vis2.missing_value_flag:
-                # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                current_df.intent = extract_intent(temp_vis.columns)
-                vis2 = Vis(len(vis_objects), current_df, enhance='duplicate')
-            # Populate vis_objects list for referring back to the visualisations
-            vis_objects.append(vis2)
-            # Append the graph, wrapped in a Div to track clicks, to graph_list
-            graph2 = Graph_component(vis2)
-            if graph2.div is not None:
-                graph_list.append(graph2.div)
-            else:
-                print('No recommendations available. Please upload data first.')
+        ## Human View ##
+        # Detect and visualise duplicates
+        current_df, dups_count = detect_duplicates(current_df)
+        right_df = current_df.copy()
+        right_df.intent = extract_intent(human_previous.columns)
+        # Display the second visualisation
+        vis2 = Vis(len(vis_objects), right_df)
+        # Catch the missing value error if applicable:
+        if vis2.missing_value_flag:
+            # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+            temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+            current_df.intent = extract_intent(temp_vis.columns)
+            vis2 = Vis(len(vis_objects), current_df, enhance='duplicate')
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis2)
+        # Append the graph, wrapped in a Div to track clicks, to graph_list
+        graph2 = Graph_component(vis2)
+        if graph2.div is not None:
+            graph_list.append(graph2.div)
+        else:
+            print('No recommendations available. Please upload data first.')
 
-            if dups_count == 0:
-                show_dropdown = {'display': 'none'}
-                text_col = {'color': 'green'}
-            else:
-                show_dropdown = {'display': 'block'}
-                text_col = {'color': 'red'}
-            log(selected_option, 'user')
-            message = str(dups_count) + ' duplicated rows were detected'
-            log(message, 'system')
-            # Return all components
-            graph_div = show_side_by_side(graph_list)
+        log(selected_option, 'user')
+        message = str(dups_count) + ' duplicated rows were detected'
+        log(message, 'system')
+
+        # Return all components
+        graph_div = show_side_by_side(graph_list)
+        if dups_count == 0:
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
-                html.P(message, style=text_col),
+                html.P(message, style={'color': 'green'}),
                 graph_div,
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
-                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'},
-                    style=show_dropdown
+                    options={'undo': 'Undo the last step'}
                 )
             ])
-            return [new_div]
         else:
-            return dash.no_update
+            new_div = html.Div(children=[
+                html.P(f'Selected action: {selected_option}'),
+                html.P(message, style={'color': 'red'}),
+                graph_div,
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'duplicate-removal', 'index': step},
+                    options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates'}
+                )
+            ])
+        return [new_div]
+        
     else:
         return dash.no_update
          
@@ -652,6 +706,7 @@ def update_duplicates(drop_value, n_clicks):
 )
 def render_outliers(n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -664,6 +719,7 @@ def render_outliers(n_clicks):
         log('Finish Duplicate Removal', 'user')
         stage = 'outlier-handling'
         step += 1
+        previous_df = current_df.copy()
         # Access the last visualisation rendered on the right (human view)
         human_previous = vis_objects[-1]
         
@@ -703,7 +759,12 @@ def render_outliers(n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
-                    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept-0': 'Remove the detected outliers', 'keep-0': 'Keep all outliers'}
+                    options={
+                        'more': 'Find more outliers', 
+                        'less': 'Find less outliers', 
+                        'accept-0': 'Remove the detected outliers', 
+                        'keep-0': 'Keep all outliers'
+                    }
                 )
             ])
         return [new_div]
@@ -720,6 +781,7 @@ def render_outliers(n_clicks):
 )
 def update_outliers(drop_value, n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -728,7 +790,12 @@ def update_outliers(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more': 'Find more outliers', 'less': 'Find less outliers', 'accept': 'Remove the detected outliers', 'keep': 'Keep all outliers'}
+    options={
+        'more': 'Find more outliers', 
+        'less': 'Find less outliers', 
+        'accept': 'Remove the detected outliers', 
+        'keep': 'Keep all outliers',
+    }
 
     if n_clicks is None or None in drop_value or stage != 'outlier-handling':    
         return dash.no_update
@@ -746,6 +813,7 @@ def update_outliers(drop_value, n_clicks):
                 # Just got sent here from render_outliers
                 options['next'] = 'Show remaining outliers in alternative visualisation'
                 options['keep'] = 'Keep remaining outliers'
+                options['undo'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
@@ -776,43 +844,48 @@ def update_outliers(drop_value, n_clicks):
                     graph_list.append(graph2.div)
                 else:
                     print('No recommendations available. Please upload data first.')    
+            elif 'undo' == drop_value[-1]:
+                selected_option = 'Undo the last step'
+                current_df = previous_df.copy()
+                if 'undo' in options:
+                    rv = options.pop('undo')
+                outlier_contamination = outlier_contamination_history[-1]
+            elif 'more' == drop_value[-1]:
+                selected_option = 'Find more outliers'
+                # Increase contamination parameter to find more outliers
+                outlier_contamination = determine_contamination(outlier_contamination_history, True)
+                outlier_contamination_history.append(outlier_contamination)
+            elif 'less' in drop_value[-1]:
+                selected_option = 'Find less outliers'
+                # Decrease contamination parameter to find more outliers
+                outlier_contamination = determine_contamination(outlier_contamination_history, False)
+                outlier_contamination_history.append(outlier_contamination)
             else:
-                ## Machine View ##
-                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
-
-                if 'more' == drop_value[-1]:
-                    selected_option = 'Find more outliers'
-                    # Increase contamination parameter to find more outliers
-                    outlier_contamination = determine_contamination(outlier_contamination_history, True)
-                    outlier_contamination_history.append(outlier_contamination)
-                elif 'less' in drop_value[-1]:
-                    selected_option = 'Find less outliers'
-                    # Decrease contamination parameter to find more outliers
-                    outlier_contamination = determine_contamination(outlier_contamination_history, False)
-                    outlier_contamination_history.append(outlier_contamination)
-                else:
-                    return dash.no_update
+                return dash.no_update
                 
-                intent = extract_intent(human_previous.columns)
-                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
-                outlier_df = current_df.copy()
-                outlier_df.intent = intent
-                # Display the second visualisation
-                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
-                # Catch the missing value error if applicable:
-                if vis2.missing_value_flag:
-                    # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                    temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                    current_df.intent = extract_intent(temp_vis.columns)
-                    vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis2)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph2 = Graph_component(vis2)
-                if graph2.div is not None:
-                    graph_list.append(graph2.div)
-                else:
-                    print('No recommendations available. Please upload data first.')
+            ## Machine View ##
+            vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
+            
+            intent = extract_intent(human_previous.columns)
+            current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+            outlier_df = current_df.copy()
+            outlier_df.intent = intent
+            # Display the second visualisation
+            vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+            # Catch the missing value error if applicable:
+            if vis2.missing_value_flag:
+                # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                current_df.intent = extract_intent(temp_vis.columns)
+                vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+            # Populate vis_objects list for referring back to the visualisations
+            vis_objects.append(vis2)
+            # Append the graph, wrapped in a Div to track clicks, to graph_list
+            graph2 = Graph_component(vis2)
+            if graph2.div is not None:
+                graph_list.append(graph2.div)
+            else:
+                print('No recommendations available. Please upload data first.')
 
             log(selected_option, 'user')
             message = str(outlier_count) + ' outlier values were detected'
@@ -852,7 +925,12 @@ def update_outliers_2(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
-    options={'more-2': 'Find more outliers', 'less-2': 'Find less outliers', 'remove': 'Remove the detected outliers', 'keep': 'Keep remaining outliers'}# , 'finish': 'Finish outlier handling'}
+    options={
+        'more-2': 'Find more outliers', 
+        'less-2': 'Find less outliers', 
+        'remove': 'Remove the detected outliers', 
+        'keep': 'Keep remaining outliers'
+    }
 
     if n_clicks is None or None in drop_value or len(drop_value) < 2 or stage != 'outlier-handling-2':    
         return dash.no_update
