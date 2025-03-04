@@ -1255,19 +1255,31 @@ def update_outliers_3(drop_value, n_clicks):
         else:
             return dash.no_update
 
-# Callback to handle clicking the 'Finish Outlier Handling' button, or the selection of 'Keep all/remaining outliers' to finish the process
+# Callback to handle disabling the stage-end buttons
 @app.callback(
     [Output(component_id='start-button', component_property='disabled'),
      Output(component_id='missing-end-btn', component_property='disabled'),
      Output(component_id='duplicate-end-btn', component_property='disabled'),
      Output(component_id='outlier-end-btn', component_property='disabled')],
-    [Input(component_id='outlier-end-btn', component_property='n_clicks'),
+    [Input(component_id='start-button', component_property='n_clicks'),
+     Input(component_id='missing-end-btn', component_property='n_clicks'),
+     Input(component_id='duplicate-end-btn', component_property='n_clicks'),
+     Input(component_id='outlier-end-btn', component_property='n_clicks'),
      Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     prevent_initial_call=True
 )
-def indicate_process_end(n_clicks, drop_value):
-    if n_clicks or 'keep-0' == drop_value[-1] or 'keep' == drop_value[-1]:
+def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clicks, drop_value):
+    if out_n_clicks:
         return True, True, True, True
+    elif not None in drop_value and len(drop_value) > 0:
+        if 'keep-0' == drop_value[-1] or 'keep' == drop_value[-1]:
+            return True, True, True, True
+    elif dup_n_clicks:
+        return True, True, True, False
+    elif miss_n_clicks:
+        return True, True, False, False
+    elif start_n_clicks:
+        return True, False, False, False
     else:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
