@@ -579,7 +579,8 @@ def render_duplicates(n_clicks):
                 id={'type': 'duplicate-removal', 'index': step},
                 options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates', 'keep': 'Keep all duplicates'},
                 style=show_dropdown
-            )
+            ),
+            html.Br()
         ])
         return [new_div]
 
@@ -625,7 +626,8 @@ def update_duplicates(drop_value, n_clicks):
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
                     options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates', 'keep': 'Keep all duplicates'}
-                )
+                ),
+                html.Br()
             ])
             return [new_div]
         
@@ -681,7 +683,8 @@ def update_duplicates(drop_value, n_clicks):
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
                     options={'undo': 'Undo the last step'}
-                )
+                ),
+                html.Br()
             ])
         else:
             new_div = html.Div(children=[
@@ -692,7 +695,8 @@ def update_duplicates(drop_value, n_clicks):
                     placeholder='Select an action to take', 
                     id={'type': 'duplicate-removal', 'index': step},
                     options={'highlight': 'Show duplicated rows', 'delete': 'Delete duplicates', 'keep': 'Keep all duplicates'}
-                )
+                ),
+                html.Br()
             ])
         return [new_div]
         
@@ -729,6 +733,7 @@ def render_outliers(n_clicks, drop_value):
     stage = 'outlier-handling'
     step += 1
     previous_df = current_df.copy()
+    print('++++++++++++ previous_df updated ++++++++++++++++')
     # Access the last visualisation rendered on the right (human view)
     human_previous = vis_objects[-1]
     
@@ -774,7 +779,8 @@ def render_outliers(n_clicks, drop_value):
                 'accept-0': 'Remove the detected outliers', 
                 'keep-0': 'Keep all outliers'
             }
-        )
+        ),
+        html.Br()
     ])
     return [new_div]
 
@@ -810,6 +816,7 @@ def update_outliers(drop_value, n_clicks):
         return dash.no_update
     else:
         if n_clicks > 0 and current_df is not None:
+            print('********** u_o drop_value[-1]: ', drop_value[-1], '****************')
             step += 1
             # Access the last visualisation rendered on the right (human view)
             human_previous = vis_objects[-1]
@@ -860,11 +867,15 @@ def update_outliers(drop_value, n_clicks):
                     rv = options.pop('undo')
                 outlier_contamination = outlier_contamination_history[-1]
             elif 'more' == drop_value[-1]:
+                previous_df = current_df.copy()
+                print('++++++++++++ previous_df updated ++++++++++++++++')
                 selected_option = 'Find more outliers'
                 # Increase contamination parameter to find more outliers
                 outlier_contamination = determine_contamination(outlier_contamination_history, True)
                 outlier_contamination_history.append(outlier_contamination)
             elif 'less' in drop_value[-1]:
+                previous_df = current_df.copy()
+                print('++++++++++++ previous_df updated ++++++++++++++++')
                 selected_option = 'Find less outliers'
                 # Decrease contamination parameter to find more outliers
                 outlier_contamination = determine_contamination(outlier_contamination_history, False)
@@ -909,7 +920,8 @@ def update_outliers(drop_value, n_clicks):
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
                     options=options
-                )
+                ),
+                html.Br()
             ])
             return [new_div]
         else:
@@ -926,6 +938,7 @@ def update_outliers(drop_value, n_clicks):
 )
 def update_outliers_2(drop_value, n_clicks):
     global current_df
+    global previous_df
     global stage
     global step
     global vis_objects
@@ -945,6 +958,7 @@ def update_outliers_2(drop_value, n_clicks):
         return dash.no_update
     else:
         if n_clicks > 0 and current_df is not None:
+            print('********** u_o_2 drop_value[-1]: ', drop_value[-1], '****************')
             stage = 'outlier-handling-2'
             step += 1
             # Access the last visualisation rendered on the right (human view)
@@ -953,6 +967,7 @@ def update_outliers_2(drop_value, n_clicks):
             if 'accept' == drop_value[-1]:
                 # Just got sent here from update_outliers_1
                 # options['next-2'] = 'Show remaining outliers in alternative visualisation'
+                options['undo-2'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
@@ -984,22 +999,16 @@ def update_outliers_2(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
             else:
-                ## Machine View ##
-                # Display a parallel coordinates plot
-                vis1 = Vis(len(vis_objects), current_df, machine_view=True)
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis1)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph1 = Graph_component(vis1)
-                if graph1.div is not None:
-                    graph_list.append(graph1.div)
-
                 # Access the last visualisation rendered on the right (human view)
                 human_previous = vis_objects[-1]
-
                 if 'next' == drop_value[-1]:
+                    previous_df = current_df.copy()
+                    print('++++++++++++ previous_df updated ++++++++++++++++')
                     # Just got sent here from update_outliers_1
                     selected_option = 'Show remaining outliers'
+
+                    ## Machine View ##
+                    vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
                     
                     ## Human View ##
                     # Detect and visualise outliers
@@ -1027,195 +1036,36 @@ def update_outliers_2(drop_value, n_clicks):
                     else:
                         print('No recommendations available. Please upload data first.')
 
-                else:
-                    if 'more-2' == drop_value[-1]:
-                        selected_option = 'Find more outliers'
-                        # Increase contamination parameter to find more outliers
-                        outlier_contamination = determine_contamination(outlier_contamination_history, True)
-                        outlier_contamination_history.append(outlier_contamination)
-                    elif 'less-2' in drop_value[-1]:
-                        selected_option = 'Find less outliers'
-                        # Decrease contamination parameter to find more outliers
-                        outlier_contamination = determine_contamination(outlier_contamination_history, False)
-                        outlier_contamination_history.append(outlier_contamination)
-                    elif 'remove' == drop_value[-1]:
-                        stage = 'outlier-handling-3'
-                        update_outliers_3(drop_value, n_clicks)  
-                        return dash.no_update
-                        # selected_option = 'Remove the detected outliers'
-                        # current_df = current_df[current_df.outlier != True]
-                        # outlier_contamination = outlier_contamination_history[-1]
-                        # outlier_contamination_history.append(outlier_contamination)
-                    else:
-                        return dash.no_update
-                    
-                    intent = extract_intent(human_previous.columns)
-                    current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
-                    outlier_df = current_df.copy()
-                    outlier_df.intent = intent
-                    # Display the second visualisation, catching any AttributeError that occurs
-                    try:
-                        vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
-                        # Catch the missing value error if applicable:
-                        if vis2.missing_value_flag:
-                            # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                            temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                            current_df.intent = extract_intent(temp_vis.columns)
-                            vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                    except AttributeError as e:
-                        print(e)
-                        # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                        temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                        current_df.intent = extract_intent(temp_vis.columns)
-                        vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                    # Populate vis_objects list for referring back to the visualisations
-                    vis_objects.append(vis2)
-                    # Append the graph, wrapped in a Div to track clicks, to graph_list
-                    graph2 = Graph_component(vis2)
-                    if graph2.div is not None:
-                        graph_list.append(graph2.div)
-                    else:
-                        print('No recommendations available. Please upload data first.')
-
-            log(selected_option, 'user')
-            message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
-            log(message, 'system')
-            # Return all components
-            graph_div = show_side_by_side(graph_list)
-            new_div = html.Div(children=[
-                html.P(f'Selected action: {selected_option}'),
-                html.P(message, style={'color': 'green'}),
-                graph_div,
-                dcc.Dropdown(
-                    placeholder='Select an action to take', 
-                    id={'type': 'outlier-handling', 'index': step},
-                    options=options # , 'finish': 'Finish outlier handling'}
-                )
-            ])
-            return [new_div]
-        else:
-            return dash.no_update
-
-# Callback to handle updates within the 'outlier-handling' stage #3
-@app.callback(
-    [Output(component_id='outlier-output-3', component_property='children')],
-    [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
-    [State(component_id='duplicate-end-btn', component_property='n_clicks')],
-    prevent_initial_call=True,
-    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False),
-             (Output(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='disabled'), True, False)]
-)
-def update_outliers_3(drop_value, n_clicks):
-    global current_df
-    global stage
-    global step
-    global vis_objects
-    global outlier_count
-    global outlier_contamination_history
-
-    selected_option = ''
-    graph_list = []
-    options={'more-3': 'Find more outliers', 'less-3': 'Find less outliers', 'remove-3': 'Remove the detected outliers', 'keep': 'Keep remaining outliers'}# , 'finish': 'Finish outlier handling'}
-
-    if n_clicks is None or None in drop_value or len(drop_value) < 2  or stage != 'outlier-handling-3':    
-        return dash.no_update
-    else:
-        if n_clicks > 0 and current_df is not None:
-            stage = 'outlier-handling-3'
-            step += 1
-            # Access the last visualisation rendered on the right (human view)
-            human_previous = vis_objects[-1]
-
-            if 'remove' == drop_value[-1] or 'remove-3' == drop_value[-1]:
-                # Just got sent here from update_outliers_2, or it is the final removal
-                # options['next-3'] = 'Show remaining outliers in alternative visualisation'
-                selected_option = 'Remove the detected outliers'
-                current_df = current_df[current_df.outlier != True]
-                
-                ## Machine View ##
-                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
-
-                ## Human View ##
-                # Detect and visualise outliers
-                outlier_contamination = outlier_contamination_history[-1]
-                outlier_contamination_history.append(outlier_contamination)
-                intent = extract_intent(human_previous.columns)
-                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
-                outlier_df = current_df.copy()
-                outlier_df.intent = intent
-                # Display the second visualisation
-                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
-                # Catch the missing value error if applicable:
-                if vis2.missing_value_flag:
-                    # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                    temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                    current_df.intent = extract_intent(temp_vis.columns)
-                    vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                # Populate vis_objects list for referring back to the visualisations
-                vis_objects.append(vis2)
-                # Append the graph, wrapped in a Div to track clicks, to graph_list
-                graph2 = Graph_component(vis2)
-                if graph2.div is not None:
-                    graph_list.append(graph2.div)
-                else:
-                    print('No recommendations available. Please upload data first.')
-            else:
-                ## Machine View ##
-                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
-
-                # Access the last visualisation rendered on the right (human view)
-                human_previous = vis_objects[-1]
-
-                # if 'next' == drop_value[-1]:
-                #     # Just got sent here from update_outliers_1
-                #     selected_option = 'Show remaining outliers'
-                    
-                #     ## Human View ##
-                #     # Detect and visualise outliers
-                #     outlier_contamination = outlier_contamination_history[-1]
-                #     outlier_contamination_history.append(outlier_contamination)
-                #     current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination)
-                #     current_df = lux.LuxDataFrame(current_df)
-
-                #     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                #     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                #     current_df.intent = extract_intent(temp_vis.columns)
-                #     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                #     # Catch the missing value error if applicable:
-                #     if vis2.missing_value_flag:
-                        # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
-                        # temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
-                        # current_df.intent = extract_intent(temp_vis.columns)
-                        # vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
-                #     # Populate vis_objects list for referring back to the visualisations
-                #     vis_objects.append(vis2)
-                #     # Append the graph, wrapped in a Div to track clicks, to graph_list
-                #     graph2 = Graph_component(vis2)
-                #     if graph2.div is not None:
-                #         graph_list.append(graph2.div)
-                #     else:
-                #         print('No recommendations available. Please upload data first.')
-
-                # else:
-                if 'more-3' == drop_value[-1]:
+                elif 'undo-2' == drop_value[-1]:
+                    selected_option = 'Undo the last step'
+                    current_df = previous_df.copy()
+                    if 'undo-2' in options:
+                        rv = options.pop('undo-2')
+                    outlier_contamination = outlier_contamination_history[-1]
+                    print(('**************** undo-2 triggered *****************'))
+                elif 'more-2' == drop_value[-1]:
+                    previous_df = current_df.copy()
+                    print('++++++++++++ previous_df updated ++++++++++++++++')
                     selected_option = 'Find more outliers'
                     # Increase contamination parameter to find more outliers
                     outlier_contamination = determine_contamination(outlier_contamination_history, True)
                     outlier_contamination_history.append(outlier_contamination)
-                elif 'less-3' in drop_value[-1]:
+                elif 'less-2' in drop_value[-1]:
+                    previous_df = current_df.copy()
+                    print('++++++++++++ previous_df updated ++++++++++++++++')
                     selected_option = 'Find less outliers'
                     # Decrease contamination parameter to find more outliers
                     outlier_contamination = determine_contamination(outlier_contamination_history, False)
                     outlier_contamination_history.append(outlier_contamination)
-                # elif 'remove-3' == drop_value[-1]:
-                #     stage = 'outlier-handling-3'
-                #     update_outliers_3(drop_value, n_clicks)  
-                #     # selected_option = 'Remove the detected outliers'
-                #     # current_df = current_df[current_df.outlier != True]
-                #     # outlier_contamination = outlier_contamination_history[-1]
-                #     # outlier_contamination_history.append(outlier_contamination)
+                elif 'remove' == drop_value[-1]:
+                    stage = 'outlier-handling-3'
+                    update_outliers_3(drop_value, n_clicks)  
+                    return dash.no_update
                 else:
                     return dash.no_update
+                    
+                ## Machine View ##
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
                 
                 intent = extract_intent(human_previous.columns)
                 current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
@@ -1259,6 +1109,193 @@ def update_outliers_3(drop_value, n_clicks):
                     id={'type': 'outlier-handling', 'index': step},
                     options=options # , 'finish': 'Finish outlier handling'}
                 )
+            ])
+            return [new_div]
+        else:
+            return dash.no_update
+
+# Callback to handle updates within the 'outlier-handling' stage #3
+@app.callback(
+    [Output(component_id='outlier-output-3', component_property='children')],
+    [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
+    [State(component_id='duplicate-end-btn', component_property='n_clicks')],
+    prevent_initial_call=True,
+    running=[(Output(component_id='outlier-end-btn', component_property='disabled'), True, False),
+             (Output(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='disabled'), True, False)]
+)
+def update_outliers_3(drop_value, n_clicks):
+    global current_df
+    global previous_df
+    global stage
+    global step
+    global vis_objects
+    global outlier_count
+    global outlier_contamination_history
+
+    selected_option = ''
+    graph_list = []
+    options={
+        'more-3': 'Find more outliers', 
+        'less-3': 'Find less outliers', 
+        'remove-3': 'Remove the detected outliers', 
+        'keep': 'Keep remaining outliers'
+    }
+
+    if n_clicks is None or None in drop_value or len(drop_value) < 2  or stage != 'outlier-handling-3':    
+        return dash.no_update
+    else:
+        if n_clicks > 0 and current_df is not None:
+            print('********** u_o_3 drop_value[-1]: ', drop_value[-1], '****************')
+            stage = 'outlier-handling-3'
+            step += 1
+            # Access the last visualisation rendered on the right (human view)
+            human_previous = vis_objects[-1]
+
+            if 'remove' == drop_value[-1] or 'remove-3' == drop_value[-1]:
+                # Just got sent here from update_outliers_2, or it is the final removal
+                # options['next-3'] = 'Show remaining outliers in alternative visualisation'
+                options['undo-3'] = 'Undo the last step'
+                selected_option = 'Remove the detected outliers'
+                current_df = current_df[current_df.outlier != True]
+                
+                ## Machine View ##
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
+
+                ## Human View ##
+                # Detect and visualise outliers
+                outlier_contamination = outlier_contamination_history[-1]
+                outlier_contamination_history.append(outlier_contamination)
+                intent = extract_intent(human_previous.columns)
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+                outlier_df = current_df.copy()
+                outlier_df.intent = intent
+                # Display the second visualisation
+                vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                # Catch the missing value error if applicable:
+                if vis2.missing_value_flag:
+                    # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                    temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                    current_df.intent = extract_intent(temp_vis.columns)
+                    vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+            else:
+                # Access the last visualisation rendered on the right (human view)
+                human_previous = vis_objects[-1]
+
+                # if 'next' == drop_value[-1]:
+                #     # Just got sent here from update_outliers_1
+                #     selected_option = 'Show remaining outliers'
+                    
+                #     ## Human View ##
+                #     # Detect and visualise outliers
+                #     outlier_contamination = outlier_contamination_history[-1]
+                #     outlier_contamination_history.append(outlier_contamination)
+                #     current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination)
+                #     current_df = lux.LuxDataFrame(current_df)
+
+                #     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                #     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                #     current_df.intent = extract_intent(temp_vis.columns)
+                #     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                #     # Catch the missing value error if applicable:
+                #     if vis2.missing_value_flag:
+                        # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                        # temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                        # current_df.intent = extract_intent(temp_vis.columns)
+                        # vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                #     # Populate vis_objects list for referring back to the visualisations
+                #     vis_objects.append(vis2)
+                #     # Append the graph, wrapped in a Div to track clicks, to graph_list
+                #     graph2 = Graph_component(vis2)
+                #     if graph2.div is not None:
+                #         graph_list.append(graph2.div)
+                #     else:
+                #         print('No recommendations available. Please upload data first.')
+
+                # else:
+                if 'undo-3' == drop_value[-1]:
+                    selected_option = 'Undo the last step'
+                    current_df = previous_df.copy()
+                    if 'undo-3' in options:
+                        rv = options.pop('undo-3')
+                    outlier_contamination = outlier_contamination_history[-1]
+                elif 'more-3' == drop_value[-1]:
+                    previous_df = current_df.copy()
+                    print('++++++++++++ previous_df updated ++++++++++++++++')
+                    selected_option = 'Find more outliers'
+                    # Increase contamination parameter to find more outliers
+                    outlier_contamination = determine_contamination(outlier_contamination_history, True)
+                    outlier_contamination_history.append(outlier_contamination)
+                elif 'less-3' in drop_value[-1]:
+                    previous_df = current_df.copy()
+                    print('++++++++++++ previous_df updated ++++++++++++++++')
+                    selected_option = 'Find less outliers'
+                    # Decrease contamination parameter to find more outliers
+                    outlier_contamination = determine_contamination(outlier_contamination_history, False)
+                    outlier_contamination_history.append(outlier_contamination)
+                # elif 'remove-3' == drop_value[-1]:
+                #     stage = 'outlier-handling-3'
+                #     update_outliers_3(drop_value, n_clicks)  
+                #     # selected_option = 'Remove the detected outliers'
+                #     # current_df = current_df[current_df.outlier != True]
+                #     # outlier_contamination = outlier_contamination_history[-1]
+                #     # outlier_contamination_history.append(outlier_contamination)
+                else:
+                    return dash.no_update
+                
+                ## Machine View ##
+                vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
+                
+                intent = extract_intent(human_previous.columns)
+                current_df, outlier_count = train_isolation_forest(current_df, contamination=outlier_contamination, intent=intent)
+                outlier_df = current_df.copy()
+                outlier_df.intent = intent
+                # Display the second visualisation, catching any AttributeError that occurs
+                try:
+                    vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
+                    # Catch the missing value error if applicable:
+                    if vis2.missing_value_flag:
+                        # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                        temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                        current_df.intent = extract_intent(temp_vis.columns)
+                        vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                except AttributeError as e:
+                    print(e)
+                    # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
+                    temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
+                    current_df.intent = extract_intent(temp_vis.columns)
+                    vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
+                # Populate vis_objects list for referring back to the visualisations
+                vis_objects.append(vis2)
+                # Append the graph, wrapped in a Div to track clicks, to graph_list
+                graph2 = Graph_component(vis2)
+                if graph2.div is not None:
+                    graph_list.append(graph2.div)
+                else:
+                    print('No recommendations available. Please upload data first.')
+
+            log(selected_option, 'user')
+            message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
+            log(message, 'system')
+            # Return all components
+            graph_div = show_side_by_side(graph_list)
+            new_div = html.Div(children=[
+                html.P(f'Selected action: {selected_option}'),
+                html.P(message, style={'color': 'green'}),
+                graph_div,
+                dcc.Dropdown(
+                    placeholder='Select an action to take', 
+                    id={'type': 'outlier-handling', 'index': step},
+                    options=options
+                ),
+                html.Br()
             ])
             return [new_div]
         else:
