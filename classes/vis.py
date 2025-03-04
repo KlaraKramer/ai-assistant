@@ -64,7 +64,6 @@ class Vis:
                                 # Get the column name
                                 if len(color_column) > 0:
                                     color_attribute = color_column[0].attribute
-                                    # print('**************color attribute: ', color_attribute, '****************')
                                     if color_attribute == self.enhance:
                                         self.lux_vis = rec
                                         break                        
@@ -81,7 +80,7 @@ class Vis:
                             tab20c = plt.get_cmap('tab20c')
                             # Render the visualisation using Lux
                             try:
-                                print("**********self.lux_vis: ", self.lux_vis, "****************")
+                                # print("**********self.lux_vis: ", self.lux_vis, "****************")
                                 fig_code = self.lux_vis.to_matplotlib()
                             except ValueError or AttributeError:
                                 print('Error in to_matplotlib()')
