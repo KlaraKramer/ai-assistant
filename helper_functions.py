@@ -206,3 +206,15 @@ def determine_filename(og_filename):
         og_filename = og_filename + '_clean'
     og_filename = og_filename + '.csv'
     return og_filename
+
+def update_colours(code_str):
+    # Regular expression to find the colourmap specification block
+    pattern = re.compile(r"(cmap=Set1)", re.DOTALL)
+    
+    # Replacement colourmap specification
+    new_colors = "cmap='RdYlGn_r'"
+    
+    # Replace the found colourmap block with the new one
+    updated_code = re.sub(pattern, new_colors, code_str)
+    
+    return updated_code

@@ -87,6 +87,9 @@ class Vis:
                                 fig_code = ''
                                 self.missing_value_flag = True
                             fixed_fig_code = fix_lux_code(fig_code)
+                            # Display duplicates in easily visible colours
+                            if self.enhance is not None:
+                                fixed_fig_code = update_colours(fixed_fig_code)
                             try:
                                 exec(fixed_fig_code)
                             except ValueError as e:

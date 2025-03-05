@@ -107,7 +107,7 @@ progress_bar = html.Div(
         dbc.Nav(
             [
                 dbc.NavLink('Data loading', href='#output-data-upload', active='exact', id='progress-load', style={'background-color': 'red', 'color': 'white'}),
-                dbc.NavLink('Missing value removal', href='#missing-output', active='exact', id='progress-missing', style={'background-color': 'red', 'color': 'white'}),
+                dbc.NavLink('Missing value handling', href='#missing-output', active='exact', id='progress-missing', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Duplicate removal', href='#duplicate-output', active='exact', id='progress-duplicate', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Outlier handling', href='#outlier-output', active='exact', id='progress-outlier', style={'background-color': 'red', 'color': 'white'}),
                 dbc.NavLink('Downloading', href='#download-header', active='exact', id='progress-download', style={'background-color': 'red', 'color': 'white'}),
@@ -234,6 +234,8 @@ dashboard = html.Div(id='dashboard', children=[
             )
         ]),
 
+        html.Br(),
+        html.Br(),
         html.H5('Download Section', id='download-header', style={'display': 'none'}),
         # The below is only for evaluation purposes
         html.P(
