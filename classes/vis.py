@@ -114,11 +114,6 @@ class Vis:
                                 print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
                                 print("fig\n", fig, "\n")
 
-                            # for ax in fig.axes:
-                            #     if not ax.has_data():
-                            #         ax.plot([0], [0], alpha=0)  # Invisible dummy point
-
-
                             # Try to convert Matplotlib figure to Plotly
                             try:
                                 fig = mpl_to_plotly(fig)

@@ -28,8 +28,6 @@ class Graph_component:
                     )
                 ],
                 id={'type': 'graph-container', 'index': vis.id, 'columns': str(vis.columns)},  # Store columns ID
-                # style={'cursor': 'pointer'},  # Indicate clickability
-                # n_clicks=0  # Track clicks
             )
             # # Create an Img component and wrap it in Div to track clicks
             # self.div = html.Div(

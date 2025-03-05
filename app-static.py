@@ -761,7 +761,7 @@ def render_outliers(n_clicks, drop_value):
     # Display the second visualisation
     vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
     # Catch the missing value error if applicable:
-    if vis2.missing_value_flag:
+    if vis2.missing_value_flag or vis2.output_type == 'img':
         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
         current_df.intent = extract_intent(temp_vis.columns)
@@ -856,7 +856,7 @@ def update_outliers(drop_value, n_clicks):
                 # Display the second visualisation
                 vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                 # Catch the missing value error if applicable:
-                if vis2.missing_value_flag:
+                if vis2.missing_value_flag or vis2.output_type == 'img':
                     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
@@ -900,7 +900,7 @@ def update_outliers(drop_value, n_clicks):
             # Display the second visualisation
             vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
             # Catch the missing value error if applicable:
-            if vis2.missing_value_flag:
+            if vis2.missing_value_flag or vis2.output_type == 'img':
                 # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                 temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                 current_df.intent = extract_intent(temp_vis.columns)
@@ -992,7 +992,7 @@ def update_outliers_2(drop_value, n_clicks):
                 # Display the second visualisation
                 vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                 # Catch the missing value error if applicable:
-                if vis2.missing_value_flag:
+                if vis2.missing_value_flag or vis2.output_type == 'img':
                     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
@@ -1028,7 +1028,7 @@ def update_outliers_2(drop_value, n_clicks):
                     current_df.intent = extract_intent(temp_vis.columns)
                     vis2 = Vis(len(vis_objects), current_df, enhance='outlier')
                     # Catch the missing value error if applicable:
-                    if vis2.missing_value_flag:
+                    if vis2.missing_value_flag or vis2.output_type == 'img':
                         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         current_df.intent = extract_intent(temp_vis.columns)
@@ -1078,7 +1078,7 @@ def update_outliers_2(drop_value, n_clicks):
                 try:
                     vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                     # Catch the missing value error if applicable:
-                    if vis2.missing_value_flag:
+                    if vis2.missing_value_flag or vis2.output_type == 'img':
                         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         current_df.intent = extract_intent(temp_vis.columns)
@@ -1175,7 +1175,7 @@ def update_outliers_3(drop_value, n_clicks):
                 # Display the second visualisation
                 vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                 # Catch the missing value error if applicable:
-                if vis2.missing_value_flag:
+                if vis2.missing_value_flag or vis2.output_type == 'img':
                     # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                     temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                     current_df.intent = extract_intent(temp_vis.columns)
@@ -1223,7 +1223,7 @@ def update_outliers_3(drop_value, n_clicks):
                 try:
                     vis2 = Vis(len(vis_objects), outlier_df, enhance='outlier')
                     # Catch the missing value error if applicable:
-                    if vis2.missing_value_flag:
+                    if vis2.missing_value_flag or vis2.output_type == 'img':
                         # Display the second visualisation (second recommendation - num_rec=1 - rather than the first as usual)
                         temp_vis = Vis(len(vis_objects), current_df, num_rec=1, temporary=True)
                         current_df.intent = extract_intent(temp_vis.columns)
