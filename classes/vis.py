@@ -109,12 +109,12 @@ class Vis:
                             # Manually adjust legend if needed
                             fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
 
-                            if not fig.axes:
-                                print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
-                                print("fig\n", fig, "\n")
-                            if not any(ax.has_data() for ax in fig.axes):
-                                print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
-                                print("fig\n", fig, "\n")
+                            # if not fig.axes:
+                            #     print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
+                            #     print("fig\n", fig, "\n")
+                            # if not any(ax.has_data() for ax in fig.axes):
+                            #     print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
+                            #     print("fig\n", fig, "\n")
 
                             # Try to convert Matplotlib figure to Plotly
                             try:

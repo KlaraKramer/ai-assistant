@@ -834,7 +834,7 @@ def update_outliers(drop_value, n_clicks):
 
             if 'next' == drop_value[-1] or 'accept' == drop_value[-1]:
                 stage = 'outlier-handling-2'
-                update_outliers_2(drop_value, n_clicks)   
+                # update_outliers_2(drop_value, n_clicks)   
                 return dash.no_update
             elif 'accept-0' == drop_value[-1]:
                 # Just got sent here from render_outliers
@@ -974,6 +974,7 @@ def update_outliers_2(drop_value, n_clicks):
             human_previous = vis_objects[-1]
 
             if 'accept' == drop_value[-1]:
+                print('*** within update_outliers_2: This should print, I think ***')
                 # Just got sent here from update_outliers_1
                 # options['next-2'] = 'Show remaining outliers in alternative visualisation'
                 options['undo-2'] = 'Undo the last step'
@@ -1064,7 +1065,7 @@ def update_outliers_2(drop_value, n_clicks):
                     outlier_contamination_history.append(outlier_contamination)
                 elif 'remove' == drop_value[-1]:
                     stage = 'outlier-handling-3'
-                    update_outliers_3(drop_value, n_clicks)  
+                    # update_outliers_3(drop_value, n_clicks)  
                     return dash.no_update
                 else:
                     return dash.no_update
