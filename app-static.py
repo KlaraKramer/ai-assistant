@@ -287,6 +287,7 @@ def update_ui(contents, selected_dataset, filename):
     global file_name
     global dups_count
     global outlier_count
+    global action_log
 
     if contents is None:
         # Handle selection of preloaded datasets
@@ -318,6 +319,7 @@ def update_ui(contents, selected_dataset, filename):
         vis_objects = []
         dups_count = 0
         outlier_count = 0
+        action_log = []
 
         ## Machine View ##
         vis_objects, graph_components = render_machine_view(vis_objects, uploaded_df, graph_components)
