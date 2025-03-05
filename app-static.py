@@ -60,15 +60,6 @@ missing_count = 0
 outlier_count = 0
 outlier_contamination_history = []
 
-# # Global variable to store the n_clicks_list for figures
-# figure_clicks = []
-
-# # Global variable to store selected figure id
-# selected_id = None
-
-# # Global variable to store selected columns from clicking on a figure
-# selected_columns = ()
-
 # Local helper functions
 def render_machine_view(vis_objects, df, graph_components):
     ## Machine View ##
@@ -153,6 +144,17 @@ dashboard = html.Div(id='dashboard', children=[
                 'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
             },
         ),
+        html.P('Or choose one of the preloaded datasets from the menu below:'),
+        dcc.Dropdown(
+            placeholder='Select a preloaded dataset', 
+            id='dataset-selection',
+            options={
+                        'corrupted_iris.csv': 'Iris Flower',
+                        'corrupted_energy.csv': 'Energy Consumption',
+                        'corrupted_car.csv': 'Car Insurance'
+                    }
+        ),
+        html.Br(),
 
         # Placeholder for uploaded data and initial visualisations
         html.Div(
@@ -267,12 +269,13 @@ app.layout = dbc.Container([
 # Callback to handle the file upload
 @app.callback(
     [Output(component_id='output-data-upload', component_property='children'),
-    Output(component_id='start-button', component_property='style')],
-    [Input(component_id='upload-data', component_property='contents')],
+     Output(component_id='start-button', component_property='style')],
+    [Input(component_id='upload-data', component_property='contents'),
+     Input(component_id='dataset-selection', component_property='value')],
     [State(component_id='upload-data', component_property='filename')],
     prevent_initial_call=True
 )
-def update_ui(contents, filename):
+def update_ui(contents, selected_dataset, filename):
     global uploaded_df
     global current_df
     global previous_df
@@ -283,58 +286,75 @@ def update_ui(contents, filename):
     global dups_count
     global outlier_count
 
-    # If no data has been uploaded yet
     if contents is None:
-        log('Unsupported file type', 'system')
-        return html.Div('Unsupported file type.'), {'display': 'block'}
-
+        # Handle selection of preloaded datasets
+        if selected_dataset and len(selected_dataset) > 0:
+            file_name = selected_dataset
+            filename = selected_dataset
+            uploaded_df = prepare_contents(file_name)
+        else:
+            # If no data has been uploaded yet
+            log('Unsupported file type', 'system')
+            return html.Div('Unsupported file type.'), {'display': 'block'}
     # Handle file upload (uploading data)
     else:
         # Parse uploaded contents
         uploaded_df = parse_contents(contents, filename)
         file_name = filename
-        stage = 'data-loading'
-        step = 0
-        if uploaded_df is not None:
-            step += 1
-            # Enable Lux for the uploaded DataFrame
-            uploaded_df = pd.DataFrame(uploaded_df)
-            if 'unnamed_0' in uploaded_df.columns:
-                uploaded_df = uploaded_df.drop('unnamed_0', axis=1)
-            current_df = uploaded_df.copy()
-            previous_df = uploaded_df.copy()
-            graph_components = []
-            # Reset global variables
-            vis_objects = []
-            dups_count = 0
-            outlier_count = 0
+    stage = 'data-loading'
+    step = 0
+    if uploaded_df is not None:
+        step += 1
+        # Enable Lux for the uploaded DataFrame
+        uploaded_df = pd.DataFrame(uploaded_df)
+        if 'unnamed_0' in uploaded_df.columns:
+            uploaded_df = uploaded_df.drop('unnamed_0', axis=1)
+        current_df = uploaded_df.copy()
+        previous_df = uploaded_df.copy()
+        graph_components = []
+        # Reset global variables
+        vis_objects = []
+        dups_count = 0
+        outlier_count = 0
 
-            ## Machine View ##
-            vis_objects, graph_components = render_machine_view(vis_objects, uploaded_df, graph_components)
+        ## Machine View ##
+        vis_objects, graph_components = render_machine_view(vis_objects, uploaded_df, graph_components)
 
-            ## Human View ##
-            # Display the first recommended visualisation
-            vis2 = Vis(len(vis_objects), current_df)
-            # Populate vis_objects list for referring back to the visualisations
-            vis_objects.append(vis2)
-            # Append the graph, wrapped in a Div to track clicks, to graph_components
-            graph2 = Graph_component(vis2)
-            if graph2.div is not None:
-                graph_components.append(graph2.div)
-            else:
-                print("No recommendations available. Please upload data first.")
+        ## Human View ##
+        # Display the first recommended visualisation
+        vis2 = Vis(len(vis_objects), current_df)
+        # Populate vis_objects list for referring back to the visualisations
+        vis_objects.append(vis2)
+        # Append the graph, wrapped in a Div to track clicks, to graph_components
+        graph2 = Graph_component(vis2)
+        if graph2.div is not None:
+            graph_components.append(graph2.div)
+        else:
+            print("No recommendations available. Please upload data first.")
 
-            log('Data uploaded', 'system')
-            # Return all components
-            graph_div = show_side_by_side(graph_components)
-            return (
-                html.Div([
-                    html.H5(f'Uploaded File: {filename}'),
-                    dbc.Table.from_dataframe(current_df.head(), striped=True, bordered=True, hover=True),
-                    graph_div
-                ]), 
-                {'display': 'block'}
-            )
+        log('Data uploaded', 'system')
+        # Return all components
+        graph_div = show_side_by_side(graph_components)
+        return (
+            html.Div([
+                html.H5(f'Uploaded File: {filename}'),
+                dbc.Table.from_dataframe(current_df.head(), striped=True, bordered=True, hover=True),
+                graph_div
+            ]), 
+            {'display': 'block'}
+        )
+    else:
+        return dash.no_update
+        
+
+# # Callback to handle selection of a preloaded dataset
+# @app.callback(
+#     [Output(component_id='missing-output-1', component_property='children')],
+    
+#     prevent_initial_call=True
+# )
+# def select_preloaded_data(drop_value):
+
 
 
 # Callback to handle the first render within the 'missing-value-handling' stage
@@ -895,9 +915,10 @@ def update_outliers(drop_value, n_clicks):
             else:
                 print('No recommendations available. Please upload data first.')
 
-            log(selected_option, 'user')
-            message = str(outlier_count) + ' outlier values were detected'
-            log(message, 'system')
+            if drop_value[-1] != 'accept':
+                log(selected_option, 'user')
+                message = str(outlier_count) + ' outlier values were detected'
+                log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[
@@ -1078,9 +1099,10 @@ def update_outliers_2(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
 
-            log(selected_option, 'user')
-            message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
-            log(message, 'system')
+            if drop_value[-1] != 'remove':
+                log(selected_option, 'user')
+                message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
+                log(message, 'system')
             # Return all components
             graph_div = show_side_by_side(graph_list)
             new_div = html.Div(children=[

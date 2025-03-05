@@ -33,6 +33,18 @@ def parse_contents(contents, filename):
         return df
     return None
 
+# Function to prepare preloaded data
+def prepare_contents(filename):
+    access_string = 'assets/' + filename
+    df = pd.read_csv(access_string)
+    # Convert all column names to lowercase and replace spaces with underscores
+    df.rename(columns=lambda x: x.lower().replace(' ', '_').replace('-', '_'), inplace=True)
+    # Remove all special characters from column names
+    df.rename(columns=lambda x: x.lower().replace(':', '').replace('$', '').replace('(', '').replace(')', ''), inplace=True)
+    # Detect and convert any datetime columns
+    df = parse_datetime_cols(df)
+    return df
+
 def parse_datetime_cols(df):
     # Make a copy of the data to retain original
     data_original = df.copy()
