@@ -82,14 +82,13 @@ class Vis:
                             try:
                                 # print("**********self.lux_vis: ", self.lux_vis, "****************")
                                 fig_code = self.lux_vis.to_matplotlib()
-                            except ValueError or AttributeError:
+                            except (ValueError, AttributeError) as e:
                                 print('Error in to_matplotlib()')
                                 fig_code = ''
                                 self.missing_value_flag = True
                             fixed_fig_code = fix_lux_code(fig_code)
-                            # Display duplicates in easily visible colours
-                            if self.enhance is not None:
-                                fixed_fig_code = update_colours(fixed_fig_code)
+                            # Use easily visible colours
+                            fixed_fig_code = update_colours(fixed_fig_code)
                             try:
                                 exec(fixed_fig_code)
                             except ValueError as e:

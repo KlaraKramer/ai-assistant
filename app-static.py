@@ -651,9 +651,6 @@ def update_duplicates(drop_value, n_clicks):
         elif 'delete' == drop_value[-1]:
             selected_option = 'Delete duplicates'
             current_df = current_df[current_df.duplicate != True]
-        # elif 'keep' == drop_value[-1]:
-        #     render_outliers(1)
-        #     return dash.no_update
         else:
             return dash.no_update
          
@@ -1322,6 +1319,7 @@ def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clic
     #  Output(component_id='dirtiness-status', component_property='children'),
     #  Output(component_id='dirtiness-status', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
+     Input(component_id='dataset-selection', component_property='value'),
      Input(component_id='start-button', component_property='n_clicks'),
      Input(component_id='missing-end-btn', component_property='n_clicks'),
      Input(component_id='duplicate-end-btn', component_property='n_clicks'),
@@ -1332,7 +1330,7 @@ def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clic
      Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
     prevent_initial_call=True
 )
-def update_progress(contents, click_start, click_miss, click_dup, click_out, click_down, click_down_dash, drop_dup, drop_out):
+def update_progress(contents, selected_dataset, click_start, click_miss, click_dup, click_out, click_down, click_down_dash, drop_dup, drop_out):
     global download_completion
     global load_colour
     global miss_colour
@@ -1354,6 +1352,20 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    # If a new file is uploaded, reset colours to 'red' and display styles to 'none'
+    if (ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']) or ('dataset-selection' in changed_id):
+        load_colour = 'green'
+        miss_colour = 'red'
+        dup_colour = 'red'
+        out_colour = 'red'
+        down_colour = 'red'
+        missing_style = {'display': 'none'}
+        dup_style = {'display': 'none'}
+        out_style = {'display': 'none'}
+        info_style = {'display': 'none'}
+        download_style = {'display': 'none'}
+    
     if 'start-button' in changed_id:
         load_colour = 'green'
         missing_style = {'display': 'block'}
@@ -1406,19 +1418,6 @@ def update_progress(contents, click_start, click_miss, click_dup, click_out, cli
             down_info_style = {'display': 'none'}
             info_style = {'display': 'block'}
             log('Finish Outlier Handling', 'user')
-
-    # If a new file is uploaded, reset colours to 'red' and display styles to 'none'
-    elif ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']:
-        load_colour = 'green'
-        miss_colour = 'red'
-        dup_colour = 'red'
-        out_colour = 'red'
-        down_colour = 'red'
-        missing_style = {'display': 'none'}
-        dup_style = {'display': 'none'}
-        out_style = {'display': 'none'}
-        info_style = {'display': 'none'}
-        download_style = {'display': 'none'}
 
     return (
         {'background-color': load_colour, 'color': 'white'},  # progress-load
