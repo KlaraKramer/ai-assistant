@@ -231,6 +231,8 @@ def style_progress(ctx, changed_id, click_out, download_completion, drop_dup, dr
         info_style = {'display': 'none'}
         down_info_style = {'display': 'none'}
         download_style = {'display': 'none'}
+        completion_style = {'display': 'none'}
+        download_completion = [0, 0]
     
     if 'start-button' in changed_id:
         load_colour = 'green'
@@ -291,4 +293,4 @@ def style_progress(ctx, changed_id, click_out, download_completion, drop_dup, dr
             log_msg[0] = 'Finish Outlier Handling'
             log_msg[1] = 'user'
     
-    return load_colour, miss_colour, dup_colour, out_colour, down_colour, missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style, log_msg
+    return load_colour, miss_colour, dup_colour, out_colour, down_colour, missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style, download_completion, log_msg
