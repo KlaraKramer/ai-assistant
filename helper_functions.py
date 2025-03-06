@@ -210,11 +210,85 @@ def determine_filename(og_filename):
 def update_colours(code_str):
     # Regular expression to find the colourmap specification block
     pattern = re.compile(r"(cmap=Set1)", re.DOTALL)
-    
     # Replacement colourmap specification
     new_colors = "cmap='RdYlGn_r'"
-    
     # Replace the found colourmap block with the new one
     updated_code = re.sub(pattern, new_colors, code_str)
-    
     return updated_code
+
+def style_progress(ctx, changed_id, click_out, download_completion, drop_dup, drop_out, load_colour, miss_colour, dup_colour, out_colour, down_colour, missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style):
+    log_msg = ['', '']
+    # If a new file is uploaded, reset colours to 'red' and display styles to 'none'
+    if (ctx.triggered and 'upload-data' in ctx.triggered[0]['prop_id']) or ('dataset-selection' in changed_id):
+        load_colour = 'green'
+        miss_colour = 'red'
+        dup_colour = 'red'
+        out_colour = 'red'
+        down_colour = 'red'
+        missing_style = {'display': 'none'}
+        dup_style = {'display': 'none'}
+        out_style = {'display': 'none'}
+        info_style = {'display': 'none'}
+        down_info_style = {'display': 'none'}
+        download_style = {'display': 'none'}
+    
+    if 'start-button' in changed_id:
+        load_colour = 'green'
+        missing_style = {'display': 'block'}
+        # The below is only for evaluation purposes
+        download_style = {'display': 'block'}
+        down_info_style = {'display': 'block'}
+        # dirtiness = determine_dirtiness()
+    elif 'missing-end-btn' in changed_id:
+        miss_colour = 'green'
+        missing_style = {'display': 'block'}
+        dup_style = {'display': 'block'}
+    elif 'duplicate-end-btn' in changed_id:
+        dup_colour = 'green'
+        out_style = {'display': 'block'}
+    elif 'outlier-end-btn' in changed_id or click_out == 10:
+        out_colour = 'green'
+        download_style = {'display': 'block'}
+        log_msg[0] = 'Finish Outlier Handling'
+        log_msg[1] = 'user'
+        # The below is only for evaluation purposes
+        down_info_style = {'display': 'none'}
+        info_style = {'display': 'block'}
+    elif 'csv-btn' in changed_id:
+        download_completion[0] = 1
+    elif 'download-btn' in changed_id:
+        download_completion[1] = 1
+    
+    if download_completion[0] == 1 and download_completion[1] == 1:
+        down_colour = 'green'
+        completion_style = {'display': 'block'}
+    
+    if None not in drop_dup and len(drop_dup) >= 1:
+        if 'keep' == drop_dup[-1]:
+            log_msg[0] = 'Keep all duplicates'
+            log_msg[1] = 'user'
+            dup_colour = 'green'
+            out_style = {'display': 'block'}
+    if None not in drop_out and len(drop_out) >= 1:
+        if 'keep-0' == drop_out[-1]:
+            log_msg[0] = 'Keep all outliers'
+            log_msg[1] = 'user'
+            out_colour = 'green'
+            download_style = {'display': 'block'}
+            # The below is only for evaluation purposes
+            down_info_style = {'display': 'none'}
+            info_style = {'display': 'block'}
+            log_msg[0] = 'Finish Outlier Handling'
+            log_msg[1] = 'user'
+        elif 'keep' == drop_out[-1]:
+            log_msg[0] = 'Keep remaining outliers'
+            log_msg[1] = 'user'
+            out_colour = 'green'
+            download_style = {'display': 'block'}
+            # The below is only for evaluation purposes
+            down_info_style = {'display': 'none'}
+            info_style = {'display': 'block'}
+            log_msg[0] = 'Finish Outlier Handling'
+            log_msg[1] = 'user'
+    
+    return load_colour, miss_colour, dup_colour, out_colour, down_colour, missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style, log_msg
