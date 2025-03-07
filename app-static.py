@@ -848,7 +848,7 @@ def update_outliers(drop_value, n_clicks):
                 return dash.no_update
             elif 'accept-0' == drop_value[-1]:
                 # Just got sent here from render_outliers
-                options['next'] = 'Show remaining outliers in alternative visualisation'
+                # options['next'] = 'Show remaining outliers in alternative visualisation'
                 options['keep'] = 'Keep remaining outliers'
                 options['undo'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
