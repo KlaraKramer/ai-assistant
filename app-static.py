@@ -257,7 +257,8 @@ dashboard = html.Div(id='dashboard', children=[
             className='btn btn-success',
             style={'display': 'none'}
         ),
-        dcc.Download(id='download-log')
+        dcc.Download(id='download-log'),
+        html.Br()
     ]) # style={'justify': 'center', 'align': 'center'})
 ], style=DASHBOARD_STYLE)
 
