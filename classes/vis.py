@@ -100,7 +100,6 @@ class Vis:
                             # Capture the current Matplotlib figure
                             fig = plt.gcf()
                             if fig is None:
-                                print('~~~~~~~~~~~~ FIG IS NONE ~~~~~~~~~~~~~~')
                                 pass ########### Return useful error here
                             plt.draw()
 
@@ -108,13 +107,6 @@ class Vis:
                             plt.tight_layout()  # Auto-adjust layout to fit everything
                             # Manually adjust legend if needed
                             fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
-
-                            # if not fig.axes:
-                            #     print("~~~~~~~~~~~~~~ Matplotlib figure has no axes. Nothing to convert. ~~~~~~~~~~~~~~")
-                            #     print("fig\n", fig, "\n")
-                            # if not any(ax.has_data() for ax in fig.axes):
-                            #     print("~~~~~~~~~~~~~~ Matplotlib figure has no plotted data. Cannot convert. ~~~~~~~~~~")
-                            #     print("fig\n", fig, "\n")
 
                             # Try to convert Matplotlib figure to Plotly
                             try:

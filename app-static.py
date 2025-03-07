@@ -984,7 +984,6 @@ def update_outliers_2(drop_value, n_clicks):
             human_previous = vis_objects[-1]
 
             if 'accept' == drop_value[-1]:
-                print('*** within update_outliers_2: This should print, I think ***')
                 # Just got sent here from update_outliers_1
                 # options['next-2'] = 'Show remaining outliers in alternative visualisation'
                 options['undo-2'] = 'Undo the last step'
