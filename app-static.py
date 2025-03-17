@@ -119,7 +119,7 @@ progress_bar = html.Div(
         html.Div(
             children=[
                 html.P('Congratulations on finishing the data cleaning.', style={'font': 'bold', 'color': 'white'}),
-                html.P('Please load the page new to upload a new dataset.', style={'font': 'bold', 'color': 'white'})
+                html.P('Please reload the page to upload a new dataset.', style={'font': 'bold', 'color': 'white'})
             ],
             id='completion-message',
             style={'display': 'none'}
