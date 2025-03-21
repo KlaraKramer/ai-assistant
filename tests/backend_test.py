@@ -5,9 +5,9 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from duplicate_detection import *
-from missing_value_detection import *
-from outlier_isolation_forest import *
+from backend_magic.duplicate_detection import *
+from backend_magic.missing_value_detection import *
+from backend_magic.outlier_isolation_forest import *
 
 
 @pytest.fixture

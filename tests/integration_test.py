@@ -8,9 +8,9 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app import *
-from missing_value_detection import *
-from duplicate_detection import *
-from outlier_isolation_forest import *
+from backend_magic.missing_value_detection import *
+from backend_magic.duplicate_detection import *
+from backend_magic.outlier_isolation_forest import *
 
 # Mock global dataframe variable
 mock_current_df = pd.DataFrame({

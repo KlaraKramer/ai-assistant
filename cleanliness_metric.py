@@ -1,5 +1,5 @@
-from duplicate_detection import *
-from missing_value_detection import *
+from backend_magic.duplicate_detection import *
+from backend_magic.missing_value_detection import *
 
 def count_outliers(df_og, df_new):
     if not df_og.columns.equals(df_new.columns):

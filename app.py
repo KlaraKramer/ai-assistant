@@ -15,9 +15,9 @@ import numpy as np
 
 from helper_functions import *
 # from cleanliness_metric import determine_dirtiness
-from outlier_isolation_forest import *
-from duplicate_detection import *
-from missing_value_detection import *
+from backend_magic.outlier_isolation_forest import *
+from backend_magic.duplicate_detection import *
+from backend_magic.missing_value_detection import *
 from classes.vis import Vis
 from classes.graph_component import Graph_component
 
