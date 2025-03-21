@@ -125,7 +125,7 @@ def extract_vis_columns(visualisation):
     extracted_columns = []
     # Convert Vis object to string and extract x and y column names
     vis_str = str(visualisation)
-    match = re.search(r'x: ([^,]+), y: ([^)]+)', vis_str)
+    match = re.search(r'x: ([^,]+), y: ([^),]+)', vis_str)
     if match:
         x_col, y_col = match.groups()
         extracted_columns = [x_col.strip(), y_col.strip()]

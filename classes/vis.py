@@ -75,6 +75,7 @@ class Vis:
                             self.lux_vis = self.selected_recommendations[0]
                         # Get the relevant column names
                         self.columns = extract_vis_columns(self.lux_vis)
+                        # print('*** columns: ', self.columns, '***')
 
                         if not temporary:                    
                             # Initialise variables that will be specified in the fig_code 

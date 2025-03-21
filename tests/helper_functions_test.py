@@ -18,6 +18,16 @@ def outlier_df():
         'outlier': [False, False, False, False, True, False, True]
     })
 
+@pytest.fixture
+def timestamp_df():
+    return pd.DataFrame({
+        'id': [0, 1, 2, 3, 4, 5, 6],
+        'str': ['apple', 'banana', 'cherry', 'banana', 'date', 'elderberry', 'fig'],
+        'flt': [1.0, 2.5, 3.8, 2.5, 5.9, 3.1, 0],
+        'int': [100, 200, 300, 200, -2, 400, 250],
+        'reg': ['2021-07-03 16:21:12.357246', '2025-01-04 07:21:12.123456', '2020-03-17 15:00:00.357246', '2001-04-04 14:02:00.000000', '2025-12-06 21:15:37.428000', '2021-07-03 16:21:12.357246', '2020-03-20 19:00:00.946205']
+    })
+
 
 def test_extract_intent():
     # Test normal behaviour
@@ -58,3 +68,18 @@ def test_determine_filename():
 def test_downloadable_data(outlier_df):
     output_df = downloadable_data(outlier_df)
     assert 'outlier' not in output_df.columns
+    assert 'flt' in output_df.columns
+    assert len(output_df.columns) == 4
+
+
+def test_extract_vis_columns():
+    extracted_columns = extract_vis_columns('<Vis  (x: petallengthcm, y: petalwidthcm) mark: scatter, score: 0.8385862259042764 >')
+    assert extracted_columns == ['petallengthcm', 'petalwidthcm']
+    extracted_columns = extract_vis_columns('<Vis  (x: annual_mileage_x1000_km, y: previous_accidents, color: duplicate) mark: scatter, score: 1.0 >')
+    assert extracted_columns == ['annual_mileage_x1000_km', 'previous_accidents']
+
+
+@pytest.mark.filterwarnings('ignore:Could not infer format, so each element will be parsed individually:UserWarning')
+def test_parse_datetime_cols(timestamp_df):
+    output_df = parse_datetime_cols(timestamp_df)
+    assert 'reg' in output_df.columns
