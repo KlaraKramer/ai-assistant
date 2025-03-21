@@ -3,7 +3,6 @@ import pandas as pd
 import sys
 import os
 
-# Add the parent directory (ai-assistant/) to the path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from duplicate_detection import *
@@ -29,6 +28,15 @@ def missing_df():
         'int': [100, np.nan, 300, 200]
     })
 
+@pytest.fixture
+def outlier_df():
+    return pd.DataFrame({
+        'id': [0, 1, 2, 3, 4, 5, 6],
+        'str': ['apple', 'banana', 'cherry', 'banana', 'date', 'elderberry', 'fig'],
+        'flt': [1.0, 2.5, 3.8, 2.5, 5.9, 3.1, 0],
+        'int': [100, 200, 300, 200, -2, 400, 250]
+    })
+
 
 def test_detect_duplicates(duplicate_df):
     # Test normal behaviour
@@ -42,8 +50,75 @@ def test_detect_duplicates(duplicate_df):
     assert output_df.shape[0] == 4
 
 
-def test_detect_missing_values(missing_df):
+def test_detect_missing_values(missing_df, duplicate_df):
     # Test normal behaviour
     output_df, miss_count = detect_missing_values(missing_df)
     assert miss_count == 4
-    # assert output_df.shape
+    assert output_df.shape[0] == 1
+    assert output_df.shape[1] == 4
+
+    # Test behaviour if no values are missing
+    output_df, miss_count = detect_missing_values(duplicate_df)
+    assert miss_count == 0
+    assert output_df.shape[0] == 1
+    assert output_df.shape[1] == 4
+
+
+def test_simple_imputation(missing_df):
+    # Test normal behaviour
+    output_df = impute_missing_values(missing_df, method='simple')
+    new_df, miss_count = detect_missing_values(output_df)
+    assert miss_count == 0
+    assert new_df.shape[0] == 1
+    assert new_df.shape[1] == 4
+
+    # Test behaviour without specifying the method
+    output_df = impute_missing_values(missing_df)
+    new_df, miss_count = detect_missing_values(output_df)
+    assert miss_count == 0
+    assert new_df.shape == (1, 4)
+
+    # Test imputed values
+    assert output_df['id'].mean() == 1.5
+    assert missing_df['flt'].mean() == output_df['flt'].mean()
+    assert output_df['int'].mean() == 200
+
+
+def test_knn_imputation(missing_df):
+    # Test normal behaviour
+    output_df = impute_missing_values(missing_df, method='KNN')
+    new_df, miss_count = detect_missing_values(output_df)
+    assert miss_count == 0
+    assert new_df.shape == (1, 4)
+
+    # Test imputed values
+    assert output_df['id'].mean() == np.float64(1.625)
+    assert missing_df['flt'].mean() != output_df['flt'].mean()
+    assert output_df['int'].mean() == 200
+
+
+@pytest.mark.filterwarnings('ignore:Could not infer format, so each element will be parsed individually:UserWarning')
+def test_outlier_detection(outlier_df):
+    # Test normal behaviour
+    output_df, out_count = train_isolation_forest(outlier_df)
+    assert out_count == 2
+    assert output_df['outlier'].tolist()[1] == False
+
+    # Test specification of contamination parameter
+    output_df, out_count = train_isolation_forest(outlier_df, contamination=0.1)
+    assert out_count == 1
+    assert output_df['outlier'].tolist()[1] == False
+
+    output_df, out_count = train_isolation_forest(outlier_df, contamination=0.5)
+    assert out_count == 3
+    assert output_df['outlier'].tolist()[1] == False
+    assert output_df['outlier'].tolist()[4] == True
+
+    # Test out-of-range specification of contamination parameter
+    output_df, out_count = train_isolation_forest(outlier_df, contamination=0)
+    assert out_count == 2
+    assert output_df['outlier'].tolist()[1] == False
+
+    output_df, out_count = train_isolation_forest(outlier_df, contamination=0.6)
+    assert out_count == 2
+    assert output_df['outlier'].tolist()[1] == False

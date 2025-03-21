@@ -1,6 +1,13 @@
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message="Could not infer format, so each element will be parsed individually",
+    category=UserWarning,
+)
 
 def train_isolation_forest(data, contamination=0.2, intent=[]):
     # Ensure valid contamination value
