@@ -122,7 +122,7 @@ class Vis:
                                 self.output_type = 'plotly'
                             except Exception as e: #ValueError
                                 # If an error occurs, display the static Matplotlib image instead
-                                print('Error during mpl_to_plotly conversion, falling back to displaying a static image:\n', e, '\n********************************')
+                                # print('Error during mpl_to_plotly conversion, falling back to displaying a static image:\n', e, '\n********************************')
                                 # Create the styled Matplotlib figure
                                 fallback_fig = create_styled_matplotlib_figure(fig)
                                 # Convert Matplotlib figure to base64 image

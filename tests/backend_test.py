@@ -50,18 +50,35 @@ def test_detect_duplicates(duplicate_df):
     assert output_df.shape[0] == 4
 
 
+def test_detect_no_duplicates(missing_df):
+    # Test normal behaviour
+    output_df, dups_count = detect_duplicates(missing_df)
+    assert dups_count == 0
+    assert output_df.shape[0] == 4
+
+    # Test keep=False behaviour
+    output_df, dups_count = detect_duplicates(missing_df, keep=False)
+    assert dups_count == 0
+    assert output_df.shape[0] == 4
+
+
 def test_detect_missing_values(missing_df, duplicate_df):
     # Test normal behaviour
     output_df, miss_count = detect_missing_values(missing_df)
     assert miss_count == 4
-    assert output_df.shape[0] == 1
-    assert output_df.shape[1] == 4
+    assert output_df.shape == (1, 4)
 
     # Test behaviour if no values are missing
     output_df, miss_count = detect_missing_values(duplicate_df)
     assert miss_count == 0
-    assert output_df.shape[0] == 1
-    assert output_df.shape[1] == 4
+    assert output_df.shape == (1, 4)
+
+
+def test_detect_no_missing_values(outlier_df):
+    # Test normal behaviour
+    output_df, miss_count = detect_missing_values(outlier_df)
+    assert miss_count == 0
+    assert output_df.shape == (1, 4)
 
 
 def test_simple_imputation(missing_df):
