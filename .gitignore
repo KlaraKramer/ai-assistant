@@ -1,2 +1,4 @@
 debug_figure.png
 lux_vis.html
+.pytest_cache/
+__pycache__

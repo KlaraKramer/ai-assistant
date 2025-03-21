@@ -41,7 +41,6 @@ class Vis:
                 if recommendations:
                     # Store the recommendation options (e.g., Occurrence, Correlation, Temporal)
                     rec_options = [key for key in recommendations]
-                    # print('*** rec_options: ', rec_options, ' ***')
                     if 'Enhance' in rec_options:
                         self.rec_type = 'Enhance'
                     elif 'Correlation' in rec_options:
@@ -57,7 +56,6 @@ class Vis:
 
                     # Plot figure
                     if self.selected_recommendations:
-                        # print('*** self.selected_recommendations: ', self.selected_recommendations, ' ***')
                         if self.rec_type == 'Enhance' and self.enhance is not None:
                             # Search self.selected_recommendations for the color attribute stored in self.enhance
                             for rec in self.selected_recommendations:
