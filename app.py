@@ -976,8 +976,7 @@ def update_outliers_2(drop_value, n_clicks):
             human_previous = vis_objects[-1]
 
             if 'accept' == drop_value[-1]:
-                # Just got sent here from update_outliers_1
-                # options['next-2'] = 'Show remaining outliers in alternative visualisation'
+                # Just got sent here from update_outliers
                 options['undo-2'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
@@ -1115,7 +1114,7 @@ def update_outliers_2(drop_value, n_clicks):
                 dcc.Dropdown(
                     placeholder='Select an action to take', 
                     id={'type': 'outlier-handling', 'index': step},
-                    options=options # , 'finish': 'Finish outlier handling'}
+                    options=options
                 )
             ])
             return [new_div]

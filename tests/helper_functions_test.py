@@ -18,6 +18,7 @@ def outlier_df():
         'outlier': [False, False, False, False, True, False, True]
     })
 
+
 @pytest.fixture
 def timestamp_df():
     return pd.DataFrame({
