@@ -28,3 +28,7 @@ def impute_missing_values(df, method='simple'):
     # Apply imputation only to numeric columns    
     df_copy[num_cols] = imp.fit_transform(df_copy[num_cols])
     return df_copy
+
+def remove_missing_values(df):
+    df = df[df.notnull().all(axis=1)]
+    return df
