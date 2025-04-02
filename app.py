@@ -1,7 +1,18 @@
-##################################################################################
-### This is the main executable app file of the Visual Data Wizard application ###
-##################################################################################
+###################################################################################################
+### This is the main executable app file of the Visual Data Wizard application                  ###
+###                                                                                             ###
+### It specifies the application’s layout, generates and displays buttons and dropdown          ###
+### menus for user interaction, and calls the individual data-cleaning functions where required ###
+###                                                                                             ###
+### The callback functions to handle event-driven UI updates form the largest part of this file ###
+### and the application's logic in general                                                      ###
+###################################################################################################
 
+
+###############
+### Imports ###
+
+# External imports
 import dash
 from dash import dcc, html, Input, Output, State, ALL, ctx
 import dash_bootstrap_components as dbc
@@ -16,24 +27,24 @@ from flask import Flask, send_file
 import sys
 import os
 import numpy as np
+matplotlib.use('Agg')  
 
+# Internal imports
 from helper_functions import *
 from backend_magic.outlier_isolation_forest import *
 from backend_magic.duplicate_detection import *
 from backend_magic.missing_value_detection import *
 from classes.vis import Vis
 from classes.graph_component import Graph_component
-
 # Add locally cloned Lux source code to path, and import Lux from there
 sys.path.insert(0, os.path.abspath('./lux'))
 import lux
 
-matplotlib.use("Agg")  # Use a non-interactive backend
 
-# Use non-interactive backend
-matplotlib.use('Agg')  
+################################################
+### Global variable and function definitions ###
 
-# Initialize Dash app
+# Initialise Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 # Global variables to keep track of progress
@@ -45,8 +56,7 @@ download_completion = [0, 0]
 load_colour, miss_colour, dup_colour, out_colour, down_colour = 'red', 'red', 'red', 'red', 'red'
 missing_style, dup_style, out_style, info_style, download_style, down_info_style, completion_style = {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}, {'display': 'none'}
 
-
-# Global variables to store the original uploaded DataFrame, the current state of it, and the previous saved state to enable going back
+# Global variables to store the original uploaded DataFrame, the current state of it, and the previous saved state
 uploaded_df = None
 current_df = None
 previous_df = None
@@ -57,16 +67,14 @@ file_name = None
 # Global variable to store Vis objects, including the indices corresponding to the figures they are displayed in
 vis_objects = []
 
-# Global variable to store components of the various sections of the pipeline
+# Global variables to store components of the various sections of the pipeline
 dups_count = 0
 missing_count = 0
 outlier_count = 0
 outlier_contamination_history = []
 
-# Local helper functions
+# Display a parallel coordinates plot
 def render_machine_view(vis_objects, df, graph_components):
-    ## Machine View ##
-    # Display a parallel coordinates plot
     vis1 = Vis(len(vis_objects), df, machine_view=True)
     # Populate vis_objects list for referring back to the visualisations
     vis_objects.append(vis1)
@@ -76,6 +84,7 @@ def render_machine_view(vis_objects, df, graph_components):
         graph_components.append(graph1.div)
     return vis_objects, graph_components
 
+# Create an entry in the action log
 def log(message, type):
     global action_log
     entry = ''
@@ -86,8 +95,11 @@ def log(message, type):
     action_log.append(entry)
 
 
+##############################################################
+### Definition of the dashboard's layout and UI components ###
+
 # The following style items were adapted from https://github.com/Coding-with-Adam/Dash-by-Plotly/blob/master/Bootstrap/Side-Bar/side_bar.py 
-# styling the progress bar
+# Styling the progress bar
 PROGRESS_BAR_STYLE = {
     'position': 'fixed',
     'top': 0,
@@ -98,7 +110,7 @@ PROGRESS_BAR_STYLE = {
     'background-color': '#333333',
 }
 
-# padding for the main dashboard
+# Padding for the main dashboard
 DASHBOARD_STYLE = {
     'margin-left': '8rem'
 }
@@ -172,7 +184,9 @@ dashboard = html.Div(id='dashboard', children=[
             style={'display': 'none'}
         ),
 
+        # Beginning of the data engineering pipeline
         html.Div([
+            # Beginning of the missing value handling stage
             html.Div(
                 id='missing-output', 
                 className='mt-4',
@@ -189,6 +203,7 @@ dashboard = html.Div(id='dashboard', children=[
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
+            # Beginning of the duplicate detection stage
             html.Div(
                 id='duplicate-output', 
                 className='mt-4',
@@ -205,6 +220,7 @@ dashboard = html.Div(id='dashboard', children=[
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
+            # Beginning of the outlier handling stage
             html.Div(
                 id='outlier-output', 
                 className='mt-4',
@@ -262,7 +278,7 @@ dashboard = html.Div(id='dashboard', children=[
         ),
         dcc.Download(id='download-log'),
         html.Br()
-    ]) # style={'justify': 'center', 'align': 'center'})
+    ])
 ], style=DASHBOARD_STYLE)
 
 # Set dashboard layout
@@ -272,15 +288,10 @@ app.layout = dbc.Container([
     dashboard,
 ])
 
-@app.callback(
-    Output('tooltip', 'children'),
-    Output('tooltip', 'style'),
-    Input('dataset-selection', 'value')
-)
-def update_tooltip(selected_value):
-    if selected_value and selected_value in tooltip_texts:
-        return tooltip_texts[selected_value], {'display': 'block', 'font-size': '14px'}
-    return "", {'display': 'none'}  # Hide tooltip when nothing is selected
+
+#####################################################################################
+### Main application logic:                                                       ###
+### Event-driven callback functions that constitute the data engineering pipeline ###
 
 # Callback to handle the file upload
 @app.callback(
@@ -335,10 +346,9 @@ def update_ui(contents, selected_dataset, filename):
         outlier_count = 0
         action_log = []
 
-        ## Machine View ##
+        # Display a parallel coordinates plot
         vis_objects, graph_components = render_machine_view(vis_objects, uploaded_df, graph_components)
 
-        ## Human View ##
         # Display the first recommended visualisation
         vis2 = Vis(len(vis_objects), current_df)
         # Populate vis_objects list for referring back to the visualisations
@@ -474,10 +484,9 @@ def update_missing_values(drop_value, n_clicks):
             return dash.no_update
 
         missing_df, missing_count = detect_missing_values(current_df)
-        ## Machine View ##
+        # Display a parallel coordinates plot
         vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-        ## Human View ##
         # Display the first recommended visualisation
         vis2 = Vis(len(vis_objects), current_df) #, num_rec=1
         # Populate vis_objects list for referring back to the visualisations
@@ -554,10 +563,9 @@ def render_duplicates(n_clicks):
         # Access the last visualisation rendered on the right (human view)
         human_previous = vis_objects[-1]
         
-        ## Machine View ##
+        # Display a parallel coordinates plot
         vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-        ## Human View ##
         # Detect and visualise duplicates
         current_df, dups_count = detect_duplicates(current_df)
         right_df = current_df.copy()
@@ -660,10 +668,9 @@ def update_duplicates(drop_value, n_clicks):
         else:
             return dash.no_update
          
-        ## Machine View ##
+        # Display a parallel coordinates plot
         vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-        ## Human View ##
         # Detect and visualise duplicates
         current_df, dups_count = detect_duplicates(current_df)
         right_df = current_df.copy()
@@ -754,10 +761,9 @@ def render_outliers(n_clicks, drop_value):
     # Access the last visualisation rendered on the right (human view)
     human_previous = vis_objects[-1]
     
-    ## Machine View ##
+    # Display a parallel coordinates plot
     vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-    ## Human View ##
     # Detect and visualise outliers
     outlier_contamination = determine_contamination(outlier_contamination_history, True)
     outlier_contamination_history.append(outlier_contamination)
@@ -843,16 +849,14 @@ def update_outliers(drop_value, n_clicks):
                 return dash.no_update
             elif 'accept-0' == drop_value[-1]:
                 # Just got sent here from render_outliers
-                # options['next'] = 'Show remaining outliers in alternative visualisation'
                 options['keep'] = 'Keep remaining outliers'
                 options['undo'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
-                ## Machine View ##
+                # Display a parallel coordinates plot
                 vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-                ## Human View ##
                 # Detect and visualise outliers
                 outlier_contamination = outlier_contamination_history[-1]
                 outlier_contamination_history.append(outlier_contamination)
@@ -897,7 +901,7 @@ def update_outliers(drop_value, n_clicks):
             else:
                 return dash.no_update
                 
-            ## Machine View ##
+            # Display a parallel coordinates plot
             vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
             
             intent = extract_intent(human_previous.columns)
@@ -942,6 +946,7 @@ def update_outliers(drop_value, n_clicks):
         else:
             return dash.no_update
 
+
 # Callback to handle updates within the 'outlier-handling' stage #2
 @app.callback(
     [Output(component_id='outlier-output-2', component_property='children')],
@@ -984,10 +989,9 @@ def update_outliers_2(drop_value, n_clicks):
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
-                ## Machine View ##
+                # Display a parallel coordinates plot
                 vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-                ## Human View ##
                 # Detect and visualise outliers
                 outlier_contamination = outlier_contamination_history[-1]
                 outlier_contamination_history.append(outlier_contamination)
@@ -1019,10 +1023,9 @@ def update_outliers_2(drop_value, n_clicks):
                     # Just got sent here from update_outliers_1
                     selected_option = 'Show remaining outliers'
 
-                    ## Machine View ##
+                    # Display a parallel coordinates plot
                     vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
                     
-                    ## Human View ##
                     # Detect and visualise outliers
                     outlier_contamination = outlier_contamination_history[-1]
                     outlier_contamination_history.append(outlier_contamination)
@@ -1073,7 +1076,7 @@ def update_outliers_2(drop_value, n_clicks):
                 else:
                     return dash.no_update
                     
-                ## Machine View ##
+                # Display a parallel coordinates plot
                 vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
                 
                 intent = extract_intent(human_previous.columns)
@@ -1124,6 +1127,7 @@ def update_outliers_2(drop_value, n_clicks):
         else:
             return dash.no_update
 
+
 # Callback to handle updates within the 'outlier-handling' stage #3
 @app.callback(
     [Output(component_id='outlier-output-3', component_property='children')],
@@ -1162,15 +1166,13 @@ def update_outliers_3(drop_value, n_clicks):
 
             if 'remove' == drop_value[-1] or 'remove-3' == drop_value[-1]:
                 # Just got sent here from update_outliers_2, or it is the final removal
-                # options['next-3'] = 'Show remaining outliers in alternative visualisation'
                 options['undo-3'] = 'Undo the last step'
                 selected_option = 'Remove the detected outliers'
                 current_df = current_df[current_df.outlier != True]
                 
-                ## Machine View ##
+                # Display a parallel coordinates plot
                 vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-                ## Human View ##
                 # Detect and visualise outliers
                 outlier_contamination = outlier_contamination_history[-1]
                 outlier_contamination_history.append(outlier_contamination)
@@ -1218,7 +1220,7 @@ def update_outliers_3(drop_value, n_clicks):
                 else:
                     return dash.no_update
                 
-                ## Machine View ##
+                # Display a parallel coordinates plot
                 vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
                 
                 intent = extract_intent(human_previous.columns)
@@ -1268,6 +1270,10 @@ def update_outliers_3(drop_value, n_clicks):
             return [new_div]
         else:
             return dash.no_update
+
+
+#################################################################
+### Callback functions that determine various styling aspects ###
 
 # Callback to handle disabling the stage-end buttons
 @app.callback(
@@ -1376,6 +1382,10 @@ def update_progress(contents, selected_dataset, click_start, click_miss, click_d
         completion_style  # completion-message
     )
 
+
+#################################################################################
+### Callback functions for the downloading of the cleaned data and action log ###
+
 # Callback to download cleaned dataset into a csv file
 @app.callback(
     Output(component_id='download-dataframe-csv', component_property='data'),
@@ -1385,6 +1395,7 @@ def update_progress(contents, selected_dataset, click_start, click_miss, click_d
 def func(n_clicks):
     global file_name
     return dcc.send_data_frame(downloadable_data(current_df).to_csv, file_name)
+
 
 # Callback to download log into a txt file
 @app.callback(
@@ -1403,6 +1414,9 @@ def save_list_to_file(n_clicks):
     file_obj = io.StringIO(file_content)
     return dict(content=file_obj.getvalue(), filename=filename)
 
+
+#########################################
+### Functionality for running the app ###
 
 # Expose the Flask server
 server = app.server
