@@ -1,3 +1,11 @@
+################################################################################################################
+### This file tests the AI-driven backend, including:                                                        ###
+### - Verifying that duplicate detection and removal works correctly in normal and edge cases                ###
+### - Testing the various functionalities of missing value detection, imputation, and removal methods        ###
+### - Ensuring that the IsolationForest model for outlier detection works as expected and yields accurate    ###
+###   results and that the outlier handling function is robust against out-of-range contamination parameters ###
+################################################################################################################
+
 import pytest
 import pandas as pd
 import sys
@@ -81,7 +89,7 @@ def test_detect_no_missing_values(outlier_df):
     assert output_df.shape == (1, 4)
 
 
-def test_simple_imputation(missing_df):
+def test_simple_imputation_normal(missing_df):
     # Test normal behaviour
     output_df = impute_missing_values(missing_df, method='simple')
     new_df, miss_count = detect_missing_values(output_df)
@@ -89,6 +97,7 @@ def test_simple_imputation(missing_df):
     assert new_df.shape[0] == 1
     assert new_df.shape[1] == 4
 
+def test_simple_imputation_no_spec(missing_df):
     # Test behaviour without specifying the method
     output_df = impute_missing_values(missing_df)
     new_df, miss_count = detect_missing_values(output_df)
@@ -121,6 +130,8 @@ def test_outlier_detection(outlier_df):
     assert out_count == 2
     assert output_df['outlier'].tolist()[1] == False
 
+@pytest.mark.filterwarnings('ignore:Could not infer format, so each element will be parsed individually:UserWarning')
+def test_outlier_contamination(outlier_df):
     # Test specification of contamination parameter
     output_df, out_count = train_isolation_forest(outlier_df, contamination=0.1)
     assert out_count == 1

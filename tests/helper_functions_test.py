@@ -1,3 +1,10 @@
+####################################################################
+### This file verifies the behaviour of helper functions such as ###
+### - the extraction of user intent from past interactions,      ###
+### - determining the outlier contamination parameter, and       ###
+### - preparing the cleaned data for downloading                 ###
+####################################################################
+
 import pytest
 import pandas as pd
 import sys

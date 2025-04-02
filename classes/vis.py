@@ -1,3 +1,7 @@
+############################################################################################################################
+### This class generates and converts visualisations, including the parallel coordinates plots and Lux recommended plots ###
+############################################################################################################################
+
 from plotly.tools import mpl_to_plotly
 from matplotlib.cm import Set1
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -73,7 +77,6 @@ class Vis:
                             self.lux_vis = self.selected_recommendations[0]
                         # Get the relevant column names
                         self.columns = extract_vis_columns(self.lux_vis)
-                        # print('*** columns: ', self.columns, '***')
 
                         if not temporary:                    
                             # Initialise variables that will be specified in the fig_code 
@@ -99,7 +102,7 @@ class Vis:
                             # Capture the current Matplotlib figure
                             fig = plt.gcf()
                             if fig is None:
-                                pass ########### Return useful error here
+                                pass
                             plt.draw()
 
                             # Adjust layout to prevent legend cutoff
@@ -120,7 +123,6 @@ class Vis:
                                 self.output_type = 'plotly'
                             except Exception as e: #ValueError
                                 # If an error occurs, display the static Matplotlib image instead
-                                # print('Error during mpl_to_plotly conversion, falling back to displaying a static image:\n', e, '\n********************************')
                                 # Create the styled Matplotlib figure
                                 fallback_fig = create_styled_matplotlib_figure(fig)
                                 # Convert Matplotlib figure to base64 image
@@ -135,7 +137,7 @@ class Vis:
         # Check if column is datetime column
         for col in df.columns:
             try:
-                parsed_col = pd.to_datetime(col, errors='coerce') # , infer_datetime_format=True
+                parsed_col = pd.to_datetime(col, errors='coerce')
                 timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
                 if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
                     # Convert timestamp column to integer

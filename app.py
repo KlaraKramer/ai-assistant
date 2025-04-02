@@ -1,3 +1,7 @@
+##################################################################################
+### This is the main executable app file of the Visual Data Wizard application ###
+##################################################################################
+
 import dash
 from dash import dcc, html, Input, Output, State, ALL, ctx
 import dash_bootstrap_components as dbc
@@ -14,7 +18,6 @@ import os
 import numpy as np
 
 from helper_functions import *
-# from cleanliness_metric import determine_dirtiness
 from backend_magic.outlier_isolation_forest import *
 from backend_magic.duplicate_detection import *
 from backend_magic.missing_value_detection import *
@@ -1319,8 +1322,6 @@ def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clic
      Output(component_id='download-info', component_property='style'),
      Output(component_id='download-btn', component_property='style'),
      Output(component_id='completion-message', component_property='style')],
-    #  Output(component_id='dirtiness-status', component_property='children'),
-    #  Output(component_id='dirtiness-status', component_property='style')],
     [Input(component_id='upload-data', component_property='contents'),
      Input(component_id='dataset-selection', component_property='value'),
      Input(component_id='start-button', component_property='n_clicks'),
@@ -1349,9 +1350,6 @@ def update_progress(contents, selected_dataset, click_start, click_miss, click_d
     global completion_style
 
     ctx = dash.callback_context
-
-    # dirtiness_text = 'Data dirtiness (0 = clean):\n'
-    # dirtiness_style = {'font': 'bold', 'display': 'none'}
 
     # If buttons are clicked, change the respective progress bars
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]

@@ -1,3 +1,7 @@
+#################################################################################################
+### This file contains functions for the detection, imputation, and removal of missing values ###
+#################################################################################################
+
 import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer

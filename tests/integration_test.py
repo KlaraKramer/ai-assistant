@@ -1,3 +1,8 @@
+##############################################################################
+### This file tests that a sequence of data engineering operations applied ###
+### to a dataset produces consistent and expected results                  ###
+##############################################################################
+
 import pytest
 import pandas as pd
 import numpy as np

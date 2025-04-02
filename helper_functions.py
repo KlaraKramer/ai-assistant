@@ -1,3 +1,10 @@
+#################################################################
+### This file defines various helper functions such as        ###
+### - the extraction of user intent from past interactions,   ###
+### - determining the outlier contamination parameter, and    ###
+### - preparing the cleaned data for downloading              ###
+#################################################################
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys

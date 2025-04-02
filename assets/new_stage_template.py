@@ -1,3 +1,8 @@
+################################################################################
+### This is the template for adding new stages to the data cleaning pipeline ###
+################################################################################
+
+
 # Callback to handle the first render within the 'NEW-STAGE' stage
 @app.callback(
     [Output(component_id='NEW-STAGE-output', component_property='children')],

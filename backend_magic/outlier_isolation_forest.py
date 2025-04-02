@@ -1,3 +1,7 @@
+################################################################################
+### This file handles outlier detection by training an IsolationForest model ###
+################################################################################
+
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
