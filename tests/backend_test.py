@@ -18,6 +18,9 @@ from backend_magic.missing_value_detection import *
 from backend_magic.outlier_isolation_forest import *
 
 
+################################
+### Specify testing fixtures ###
+
 @pytest.fixture
 def duplicate_df():
     return pd.DataFrame({
@@ -46,6 +49,9 @@ def outlier_df():
     })
 
 
+##########################################
+### Test the duplicate detection stage ###
+
 def test_detect_duplicates(duplicate_df):
     # Test normal behaviour
     output_df, dups_count = detect_duplicates(duplicate_df)
@@ -59,16 +65,19 @@ def test_detect_duplicates(duplicate_df):
 
 
 def test_detect_no_duplicates(missing_df):
-    # Test normal behaviour
+    # Test normal behaviour if no duplicates are present
     output_df, dups_count = detect_duplicates(missing_df)
     assert dups_count == 0
     assert output_df.shape[0] == 4
 
-    # Test keep=False behaviour
+    # Test keep=False behaviour if no duplicates are present
     output_df, dups_count = detect_duplicates(missing_df, keep=False)
     assert dups_count == 0
     assert output_df.shape[0] == 4
 
+
+#############################################
+### Test the missing value handling stage ###
 
 def test_detect_missing_values(missing_df, duplicate_df):
     # Test normal behaviour
@@ -83,14 +92,14 @@ def test_detect_missing_values(missing_df, duplicate_df):
 
 
 def test_detect_no_missing_values(outlier_df):
-    # Test normal behaviour
+    # Test normal behaviour using a different dataframe
     output_df, miss_count = detect_missing_values(outlier_df)
     assert miss_count == 0
     assert output_df.shape == (1, 4)
 
 
 def test_simple_imputation_normal(missing_df):
-    # Test normal behaviour
+    # Test normal behaviour of missing value imputation
     output_df = impute_missing_values(missing_df, method='simple')
     new_df, miss_count = detect_missing_values(output_df)
     assert miss_count == 0
@@ -98,7 +107,7 @@ def test_simple_imputation_normal(missing_df):
     assert new_df.shape[1] == 4
 
 def test_simple_imputation_no_spec(missing_df):
-    # Test behaviour without specifying the method
+    # Test behaviour without specifying the method of missing value imputation
     output_df = impute_missing_values(missing_df)
     new_df, miss_count = detect_missing_values(output_df)
     assert miss_count == 0
@@ -111,7 +120,7 @@ def test_simple_imputation_no_spec(missing_df):
 
 
 def test_knn_imputation(missing_df):
-    # Test normal behaviour
+    # Test normal behaviour using the KNN imputation
     output_df = impute_missing_values(missing_df, method='KNN')
     new_df, miss_count = detect_missing_values(output_df)
     assert miss_count == 0
@@ -123,9 +132,12 @@ def test_knn_imputation(missing_df):
     assert output_df['int'].mean() == 200
 
 
+#######################################
+### Test the outlier handling stage ###
+
 @pytest.mark.filterwarnings('ignore:Could not infer format, so each element will be parsed individually:UserWarning')
 def test_outlier_detection(outlier_df):
-    # Test normal behaviour
+    # Test normal behaviour of outlier detection function
     output_df, out_count = train_isolation_forest(outlier_df)
     assert out_count == 2
     assert output_df['outlier'].tolist()[1] == False

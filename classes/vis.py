@@ -27,10 +27,11 @@ class Vis:
             fig = px.parallel_coordinates(df)
             # Specify layout size
             fig.update_layout(
-                autosize=True,  # Allow auto-sizing within Dash
+                autosize=True,
                 height=400,  
                 width=600  
             )
+            # Set attributes
             self.figure = fig
             self.output_type = 'plotly'
             self.columns = list(df.columns)
@@ -60,6 +61,7 @@ class Vis:
 
                     # Plot figure
                     if self.selected_recommendations:
+                        # If a specific attribute is chosen for plot enhancement, ensure it is used
                         if self.rec_type == 'Enhance' and self.enhance is not None:
                             # Search self.selected_recommendations for the color attribute stored in self.enhance
                             for rec in self.selected_recommendations:
@@ -84,8 +86,10 @@ class Vis:
                             tab20c = plt.get_cmap('tab20c')
                             # Render the visualisation using Lux
                             try:
+                                # The below print is very useful for debugging
                                 # print("**********self.lux_vis: ", self.lux_vis, "****************")
                                 fig_code = self.lux_vis.to_matplotlib()
+                            # Catch errors if applicable
                             except (ValueError, AttributeError) as e:
                                 print('Error in to_matplotlib()')
                                 fig_code = ''
@@ -106,24 +110,24 @@ class Vis:
                             plt.draw()
 
                             # Adjust layout to prevent legend cutoff
-                            plt.tight_layout()  # Auto-adjust layout to fit everything
+                            plt.tight_layout()
                             # Manually adjust legend if needed
-                            fig.subplots_adjust(right=0.8)  # Make space on the right for the legend
+                            fig.subplots_adjust(right=0.8)
 
                             # Try to convert Matplotlib figure to Plotly
                             try:
                                 fig = mpl_to_plotly(fig)
                                 # Specify layout size
                                 fig.update_layout(
-                                    autosize=True,  # Allow auto-sizing within Dash
+                                    autosize=True,
                                     height=400,  
                                     width=600  
                                 )
                                 self.figure = fig
                                 self.output_type = 'plotly'
-                            except Exception as e: #ValueError
-                                # If an error occurs, display the static Matplotlib image instead
-                                # Create the styled Matplotlib figure
+                            except Exception as e:
+                                # If an error occurs, create a static Matplotlib image instead
+                                # In the current implementation, this is not displayed but instead a warning message is shown
                                 fallback_fig = create_styled_matplotlib_figure(fig)
                                 # Convert Matplotlib figure to base64 image
                                 self.figure = fig_to_base64(fallback_fig)

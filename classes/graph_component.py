@@ -24,6 +24,7 @@ class Graph_component:
                 n_clicks=0  # Track clicks
             )
             
+        # If fallback figure is provided instead of graph, display a warning message
         elif vis.output_type == 'img':
             self.div = html.Div(
                 children=[

@@ -27,15 +27,14 @@ def render_NEW_STAGE(n_clicks):
         # Access the last visualisation rendered on the right (human view)
         human_previous = vis_objects[-1]
         
-        ## Machine View ##
+        # Display the parallel coordinates plot
         vis_objects, graph_list = render_machine_view(vis_objects, current_df, graph_list)
 
-        ## Human View ##
         # CALL BACKEND FUNCTION
         current_df, NEW_STAGE_count = NEW_STAGE_function(current_df)
         right_df = current_df.copy()
         right_df.intent = extract_intent(human_previous.columns)
-        # Display the second visualisation
+        # Display the scatterplot
         vis2 = Vis(len(vis_objects), right_df, enhance='NEW_STAGE_interest')
         # Catch the missing value error if applicable:
         if vis2.missing_value_flag:
@@ -52,6 +51,7 @@ def render_NEW_STAGE(n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        # Add to the action log
         message = 'LOGIC FOR DISPLAYING INFORMATION ABOUT DISCOVERIES IN THE NEW-STAGE'
         log(message, 'system')
         # Return all components
@@ -59,6 +59,7 @@ def render_NEW_STAGE(n_clicks):
         new_div = html.Div(children=[
             html.P(message, style=text_col),
             graph_div,
+            # Render the action dropdown
             dcc.Dropdown(
                 placeholder='Select an action to take', 
                 id={'type': 'NEW-STAGE', 'index': step},

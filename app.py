@@ -3,6 +3,14 @@
 ###                                                                                             ###
 ### It specifies the application’s layout, generates and displays buttons and dropdown          ###
 ### menus for user interaction, and calls the individual data-cleaning functions where required ###
+### Sections:                                                                                   ###
+### 1. Imports                                                                                  ###
+### 2. Global variable and function definitions                                                 ###
+### 3. Definition of the dashboard's layout and UI components                                   ###
+### 4. Main application logic: Event-driven callback functions                                  ###
+### 5. Callback functions for styling                                                           ###
+### 6. Callback functions for triggering the downloads                                          ###
+### 7. Functionality for running the app                                                        ###
 ###                                                                                             ###
 ### The callback functions to handle event-driven UI updates form the largest part of this file ###
 ### and the application's logic in general                                                      ###
@@ -22,7 +30,6 @@ from matplotlib.cm import Set1
 import altair as alt
 import mpld3
 from sklearn import set_config
-from sklearn.pipeline import Pipeline
 from flask import Flask, send_file
 import sys
 import os
@@ -115,6 +122,7 @@ DASHBOARD_STYLE = {
     'margin-left': '8rem'
 }
 
+# Define layout of sidebar
 progress_bar = html.Div(
     [
         html.H2('Progress', className='display-6', style={'color': 'white'}),
@@ -143,11 +151,12 @@ progress_bar = html.Div(
     style=PROGRESS_BAR_STYLE,
 )
 
+# Define layout of main dashboard
 dashboard = html.Div(id='dashboard', children=[
     dbc.Container([
         html.H1('Visual Data Wizard', className='text-center my-4'),
 
-        # File upload component
+        # File upload
         dcc.Upload(
             id='upload-data',
             children=html.Div([
@@ -159,6 +168,7 @@ dashboard = html.Div(id='dashboard', children=[
                 'borderRadius': '5px', 'textAlign': 'center', 'margin': '10px'
             },
         ),
+        # Preloaded dataset selection
         html.P('Or choose one of the preloaded datasets from the menu below:'),
         dcc.Dropdown(
             placeholder='Select a preloaded dataset', 
@@ -177,6 +187,7 @@ dashboard = html.Div(id='dashboard', children=[
             className='my-4'
         ),
 
+        # Process start button
         dbc.Button(
             'Start Data Engineering Process',
             id='start-button',
@@ -241,12 +252,14 @@ dashboard = html.Div(id='dashboard', children=[
                 className='mt-4',
                 children=[]
             ),
+            # Process completion button
             dbc.Button(
                 'Finish Outlier Handling',
                 id='outlier-end-btn',
                 className='btn btn-success',
                 style={'display': 'none'}
             ),
+            # Process completion message
             html.P('You have completed the data engineering process. Please now use the below buttons to download the cleaned data and the action log.', 
                    id='out-end-info', 
                    style={'display': 'none'}
@@ -256,12 +269,13 @@ dashboard = html.Div(id='dashboard', children=[
         html.Br(),
         html.Br(),
         html.H5('Download Section', id='download-header', style={'display': 'none'}),
-        # The below is only for evaluation purposes
+        # The below message is only for evaluation purposes
         html.P(
             'Please use these buttons only at the end of the process, or if your time runs out.', 
             id='download-info',
             style={'display': 'none'}
         ),
+        # Download buttons and outputs
         dbc.Button(
             'Download Cleaned Data',
             id='csv-btn',
@@ -395,6 +409,7 @@ def render_missing_values(n_clicks):
         step += 1
         file_name = determine_filename(file_name)
 
+        # Call the backend function for missing value detection
         missing_df, missing_count = detect_missing_values(current_df)
 
         if isinstance(missing_df, pd.Series):
@@ -403,6 +418,7 @@ def render_missing_values(n_clicks):
         message = str(missing_count) + ' missing values were detected'
         log(message, 'system')
 
+        # Add new div to the UI
         if missing_count == 0:
             new_div = html.Div(children=[
                 html.P(message, style={'color': 'green'}),
@@ -469,15 +485,19 @@ def update_missing_values(drop_value, n_clicks):
             ])
             return [new_div]
         elif 'impute-simple' == drop_value[-1]:
+            # Use the backend univariate mean imputer
             selected_option = 'Impute missing values using the univariate mean'
             current_df = impute_missing_values(current_df)
         elif 'impute-KNN' == drop_value[-1]:
+            # Use the backend KNN imputer
             selected_option = 'Impute missing values using the k nearest neighbours'
             current_df = impute_missing_values(current_df, 'KNN')
         elif 'delete' == drop_value[-1]:
+            # Remove missing values
             selected_option = 'Delete rows with missing values'
             current_df = current_df[current_df.notnull().all(axis=1)]
         elif 'undo' == drop_value[-1]:
+            # Revert dataframe back to its previous state
             selected_option = 'Undo the last step'
             current_df = previous_df.copy()
         else:
@@ -560,7 +580,7 @@ def render_duplicates(n_clicks):
         stage = 'duplicate-removal'
         step += 1
         previous_df = current_df.copy()
-        # Access the last visualisation rendered on the right (human view)
+        # Access the last visualisation rendered on the right for intent specification
         human_previous = vis_objects[-1]
         
         # Display a parallel coordinates plot
@@ -589,6 +609,7 @@ def render_duplicates(n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        # Determine colour of system message
         if dups_count == 0:
             show_dropdown = {'display': 'none'}
             text_col = {'color': 'green'}
@@ -646,6 +667,7 @@ def update_duplicates(drop_value, n_clicks):
             log(selected_option, 'user')
             message = str(dups_count) + ' duplicated rows were detected'
             log(message, 'system')
+            # Add a new div to the UI
             new_div = html.Div(children=[
                 html.P(f'Selected action: {selected_option}'),
                 html.P(message, style={'color': 'red'}),
@@ -660,9 +682,11 @@ def update_duplicates(drop_value, n_clicks):
             return [new_div]
         
         elif 'undo' == drop_value[-1]:
+            # Revert the dataframe back to its previous state
             selected_option = 'Undo the last step'
             current_df = previous_df.copy()
         elif 'delete' == drop_value[-1]:
+            # Remove duplicated rows
             selected_option = 'Delete duplicates'
             current_df = current_df[current_df.duplicate != True]
         else:
@@ -692,6 +716,7 @@ def update_duplicates(drop_value, n_clicks):
         else:
             print('No recommendations available. Please upload data first.')
 
+        # Add entries to the action log
         log(selected_option, 'user')
         message = str(dups_count) + ' duplicated rows were detected'
         log(message, 'system')
@@ -758,7 +783,7 @@ def render_outliers(n_clicks, drop_value):
     stage = 'outlier-handling'
     step += 1
     previous_df = current_df.copy()
-    # Access the last visualisation rendered on the right (human view)
+    # Access the last visualisation rendered on the right for intent specification
     human_previous = vis_objects[-1]
     
     # Display a parallel coordinates plot
@@ -786,6 +811,7 @@ def render_outliers(n_clicks, drop_value):
     if graph2.div is not None:
         graph_list.append(graph2.div)
 
+    # Add an entry to the action log
     message = str(outlier_count) + ' outlier values were detected'
     log(message, 'system')
     # Return all components
@@ -828,6 +854,7 @@ def update_outliers(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
+    # Specify dropdown options
     options={
         'more': 'Find more outliers', 
         'less': 'Find less outliers', 
@@ -840,12 +867,11 @@ def update_outliers(drop_value, n_clicks):
     else:
         if n_clicks > 0 and current_df is not None:
             step += 1
-            # Access the last visualisation rendered on the right (human view)
+            # Access the last visualisation rendered on the right for intent specification
             human_previous = vis_objects[-1]
 
             if 'next' == drop_value[-1] or 'accept' == drop_value[-1]:
-                stage = 'outlier-handling-2'
-                # update_outliers_2(drop_value, n_clicks)   
+                stage = 'outlier-handling-2'  
                 return dash.no_update
             elif 'accept-0' == drop_value[-1]:
                 # Just got sent here from render_outliers
@@ -881,9 +907,11 @@ def update_outliers(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')    
             elif 'undo' == drop_value[-1]:
+                # Revert the dataframe back to its previous state
                 selected_option = 'Undo the last step'
                 current_df = previous_df.copy()
                 if 'undo' in options:
+                    # Remove undo from the dropdown options
                     rv = options.pop('undo')
                 outlier_contamination = outlier_contamination_history[-1]
             elif 'more' == drop_value[-1]:
@@ -925,6 +953,7 @@ def update_outliers(drop_value, n_clicks):
             else:
                 print('No recommendations available. Please upload data first.')
 
+            # Add entries to the action log
             if drop_value[-1] != 'accept':
                 log(selected_option, 'user')
                 message = str(outlier_count) + ' outlier values were detected'
@@ -967,6 +996,7 @@ def update_outliers_2(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
+    # Specify dropdown options
     options={
         'more-2': 'Find more outliers', 
         'less-2': 'Find less outliers', 
@@ -980,7 +1010,7 @@ def update_outliers_2(drop_value, n_clicks):
         if n_clicks > 0 and current_df is not None:
             stage = 'outlier-handling-2'
             step += 1
-            # Access the last visualisation rendered on the right (human view)
+            # Access the last visualisation rendered on the right for intent specification
             human_previous = vis_objects[-1]
 
             if 'accept' == drop_value[-1]:
@@ -1016,7 +1046,7 @@ def update_outliers_2(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
             else:
-                # Access the last visualisation rendered on the right (human view)
+                # Access the last visualisation rendered on the right for intent specification
                 human_previous = vis_objects[-1]
                 if 'next' == drop_value[-1]:
                     previous_df = current_df.copy()
@@ -1052,9 +1082,11 @@ def update_outliers_2(drop_value, n_clicks):
                         print('No recommendations available. Please upload data first.')
 
                 elif 'undo-2' == drop_value[-1]:
+                    # Revert the dataframe back to its previous state
                     selected_option = 'Undo the last step'
                     current_df = previous_df.copy()
                     if 'undo-2' in options:
+                        # Remove undo from the dropdown options
                         rv = options.pop('undo-2')
                     outlier_contamination = outlier_contamination_history[-1]
                 elif 'more-2' == drop_value[-1]:
@@ -1070,8 +1102,8 @@ def update_outliers_2(drop_value, n_clicks):
                     outlier_contamination = determine_contamination(outlier_contamination_history, False)
                     outlier_contamination_history.append(outlier_contamination)
                 elif 'remove' == drop_value[-1]:
+                    # Remove the selected outliers (handled by the next callback function and in a new UI section)
                     stage = 'outlier-handling-3'
-                    # update_outliers_3(drop_value, n_clicks)  
                     return dash.no_update
                 else:
                     return dash.no_update
@@ -1107,6 +1139,7 @@ def update_outliers_2(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
 
+            # Add entries to the action log
             if drop_value[-1] != 'remove':
                 log(selected_option, 'user')
                 message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
@@ -1128,7 +1161,7 @@ def update_outliers_2(drop_value, n_clicks):
             return dash.no_update
 
 
-# Callback to handle updates within the 'outlier-handling' stage #3
+# Callback to handle updates within the 'outlier-handling' stage #3 (final UI section for this stage)
 @app.callback(
     [Output(component_id='outlier-output-3', component_property='children')],
     [Input(component_id={'type': 'outlier-handling', 'index': ALL}, component_property='value')],
@@ -1148,6 +1181,7 @@ def update_outliers_3(drop_value, n_clicks):
 
     selected_option = ''
     graph_list = []
+    # Specify the dropdown options
     options={
         'more-3': 'Find more outliers', 
         'less-3': 'Find less outliers', 
@@ -1161,7 +1195,7 @@ def update_outliers_3(drop_value, n_clicks):
         if n_clicks > 0 and current_df is not None:
             stage = 'outlier-handling-3'
             step += 1
-            # Access the last visualisation rendered on the right (human view)
+            # Access the last visualisation rendered on the right for intent specification
             human_previous = vis_objects[-1]
 
             if 'remove' == drop_value[-1] or 'remove-3' == drop_value[-1]:
@@ -1197,12 +1231,14 @@ def update_outliers_3(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
             else:
-                # Access the last visualisation rendered on the right (human view)
+                # Access the last visualisation rendered on the right for intent specification
                 human_previous = vis_objects[-1]
                 if 'undo-3' == drop_value[-1]:
+                    # Revert the dataframe back to its previous state
                     selected_option = 'Undo the last step'
                     current_df = previous_df.copy()
                     if 'undo-3' in options:
+                        # Remove undo from the dropdown options
                         rv = options.pop('undo-3')
                     outlier_contamination = outlier_contamination_history[-1]
                 elif 'more-3' == drop_value[-1]:
@@ -1251,6 +1287,7 @@ def update_outliers_3(drop_value, n_clicks):
                 else:
                     print('No recommendations available. Please upload data first.')
 
+            # Add entries to the action log
             log(selected_option, 'user')
             message = str(outlier_count) + ' new potential outlier values were detected. If no more outliers should be removed, please click on "Finish Outlier Handling" below.'
             log(message, 'system')
@@ -1290,6 +1327,7 @@ def update_outliers_3(drop_value, n_clicks):
     prevent_initial_call=True
 )
 def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clicks, drop_dup, drop_out):
+    # If the outlier-end button is clicked, the end of the process is reached and the buttons should all be disabled
     if out_n_clicks:
         return True, True, True, True
     elif not None in drop_out and len(drop_out) > 0:
@@ -1297,6 +1335,7 @@ def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clic
             return True, True, True, True
         else:
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    # If the duplicate-end button is clicked, the first 3 stage-end buttons should be disabled
     elif dup_n_clicks:
         return True, True, True, False
     elif not None in drop_dup and len(drop_dup) > 0:
@@ -1304,8 +1343,10 @@ def indicate_process_end(start_n_clicks, miss_n_clicks, dup_n_clicks, out_n_clic
             return True, True, True, False
         else:
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+    # If the missing-end button is clicked, the first 2 stage-end buttons should be disabled
     elif miss_n_clicks:
         return True, True, False, False
+    # Else only the first stage-end button should be disabled
     elif start_n_clicks:
         return True, False, False, False
     else:

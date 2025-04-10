@@ -17,7 +17,10 @@ from backend_magic.missing_value_detection import *
 from backend_magic.duplicate_detection import *
 from backend_magic.outlier_isolation_forest import *
 
-# Mock global dataframe variable
+
+###############################
+### Set up testing fixtures ###
+
 mock_current_df = pd.DataFrame({
     'id': [0, np.nan, 2, 3, 4, 5, 6],
     'str': ['apple', 'banana', 'cherry', 'banana', 'date', 'elderberry', 'fig'],
@@ -27,7 +30,11 @@ mock_current_df = pd.DataFrame({
 })
 
 
+####################################################################
+### Helper functions for the testing of text rendered on the GUI ###
+
 def extract_text_from_dash_component(component):
+    # Return the text contained in a dash container as a string
     if isinstance(component, str):
         return component
     elif isinstance(component, list):
@@ -36,6 +43,9 @@ def extract_text_from_dash_component(component):
         return extract_text_from_dash_component(component.children)
     return ''
 
+
+#######################################################################################
+### Simulate user workflows through the process and test against expected behaviour ###
 
 @pytest.mark.filterwarnings('ignore::DeprecationWarning')
 @pytest.mark.filterwarnings('ignore::UserWarning')

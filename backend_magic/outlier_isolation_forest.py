@@ -24,7 +24,6 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
     # Convert LuxDataFrame to Pandas DataFrame if necessary
     if not isinstance(data_original, pd.DataFrame):
         data_original = pd.DataFrame(data_original)
-
     data_converted = data_original.copy()
 
     # Convert datetime columns to timestamps
@@ -41,7 +40,7 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
     # Check if column is datetime column or categorical column
     for col in object_cols:
         try:
-            parsed_col = pd.to_datetime(col, errors='coerce') # , infer_datetime_format=True
+            parsed_col = pd.to_datetime(col, errors='coerce')
             timestamp_ratio = parsed_col.notna().mean()  # Proportion of successfully converted values
             if timestamp_ratio > 0.9:  # If most values convert successfully, treat it as a timestamp
                 # Convert timestamp column to integer
@@ -50,7 +49,8 @@ def train_isolation_forest(data, contamination=0.2, intent=[]):
         except Exception:
             # Treat it as a categorical column
             le = LabelEncoder()
-            data_converted[col] = le.fit_transform(data_converted[col])  # Encode categories numerically
+            # Encode categories numerically
+            data_converted[col] = le.fit_transform(data_converted[col])  
 
     # Train the detection model
     iso = IsolationForest(contamination=contamination)

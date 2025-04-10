@@ -15,4 +15,3 @@ def detect_duplicates(df, keep='first'):
     # Count the number of duplicates detected
     dups_count = df['duplicate'].value_counts().get(True, 0)
     return df, dups_count
-

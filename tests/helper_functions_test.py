@@ -15,6 +15,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from helper_functions import *
 
+
+###############################
+### Set up texting fixtures ###
+
 @pytest.fixture
 def outlier_df():
     return pd.DataFrame({
@@ -37,8 +41,11 @@ def timestamp_df():
     })
 
 
+#########################################
+### Test the various helper functions ###
+
 def test_extract_intent():
-    # Test normal behaviour
+    # Test normal behaviour of intent extraction from imperfect Lux lists
     output = extract_intent(['item 1', 'item 2, side note'])
     assert len(output) == 2
 
@@ -48,23 +55,25 @@ def test_extract_intent():
 
 
 def test_determine_contamination():
-    # Test normal behaviour for more contamination
+    # Test normal behaviour for increasing contamination
     cont_history = [0.2, 0.1, 0.15]
     output = determine_contamination(cont_history, True)
     assert output <= 0.5 and output > 0
 
-    # Test normal behaviour for less contamination
+    # Test normal behaviour for decreasing contamination
     cont_history = [0.2, 0.3]
     output = determine_contamination(cont_history, False)
     assert output <= 0.5 and output > 0
 
-    # Test fallback behaviour for no contamination history
+    # Test fallback behaviour for no provided contamination history
     cont_history = []
     output = determine_contamination(cont_history, False)
     assert output <= 0.5 and output > 0
 
 
 def test_determine_filename():
+    # Test the output file name is always of a suitable format
+    # It should include the word 'clean', and not the word 'corrupted'
     filename = determine_filename('penguin_data.csv')
     assert filename == 'penguin_data_clean.csv'
     filename = determine_filename('corrupted_penguin.csv')
@@ -74,6 +83,7 @@ def test_determine_filename():
 
 
 def test_downloadable_data(outlier_df):
+    # Test the preparation of dataframes for download
     output_df = downloadable_data(outlier_df)
     assert 'outlier' not in output_df.columns
     assert 'flt' in output_df.columns
@@ -81,6 +91,7 @@ def test_downloadable_data(outlier_df):
 
 
 def test_extract_vis_columns():
+    # Test the correct extraction of column names from Lux Vis elements passed as strings
     extracted_columns = extract_vis_columns('<Vis  (x: petallengthcm, y: petalwidthcm) mark: scatter, score: 0.8385862259042764 >')
     assert extracted_columns == ['petallengthcm', 'petalwidthcm']
     extracted_columns = extract_vis_columns('<Vis  (x: annual_mileage_x1000_km, y: previous_accidents, color: duplicate) mark: scatter, score: 1.0 >')
@@ -89,5 +100,6 @@ def test_extract_vis_columns():
 
 @pytest.mark.filterwarnings('ignore:Could not infer format, so each element will be parsed individually:UserWarning')
 def test_parse_datetime_cols(timestamp_df):
+    # Test the automatic parsing of datetime columns to datetime objects
     output_df = parse_datetime_cols(timestamp_df)
     assert 'reg' in output_df.columns

@@ -17,7 +17,7 @@ def detect_missing_values(df):
     return missing_df, missing_val
 
 def impute_missing_values(df, method='simple'):
-    df_copy = df.copy()  # Avoid modifying the original DataFrame
+    df_copy = df.copy()
     # Select only numeric columns
     num_cols = df_copy.select_dtypes(include=[np.number]).columns
 
