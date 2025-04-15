@@ -1,17 +1,14 @@
 # 🧠 Visual Data Wizard
 
-A mixed-initiative AI-powered data engineering assistant
+A mixed-initiative AI-powered data engineering assistant.
 
----
+The Visual Data Wizard is an interactive, AI-assisted tool designed to simplify and enhance the data cleaning and preparation process — a critical yet time-consuming step in any data science workflow.
 
-## 🗂️ Contents of the zip
+High-quality data is essential for reliable insights and accurate machine learning models. However, transforming raw, messy data into clean datasets often demands significant manual effort and expertise. This tool addresses this challenge by combining the strengths of human intuition with the efficiency of machine-driven recommendations.
 
-1. Explanatory Readme.md file
-2. Maintenance Manual as PDF
-3. "Evaluation" folder containing the user study results as well as all code written to analyse these results
-4. "ai-assistant" folder containing the Visual Data Wizard's source code and all necessary data files
+Through a visual interface and a mixed-initiative workflow, the Visual Data Wizard enables users — including those without technical backgrounds — to make informed decisions during data engineering. The system suggests smart next steps, automates repetitive tasks, and provides visual feedback to help users better understand their data. All interactions are logged for transparency and reproducibility.
 
----
+By reducing cognitive load and improving task accuracy, the Visual Data Wizard makes data engineering more intuitive and inclusive, paving the way for better data and better decisions.
 
 ## 🧩 Software Dependencies
 
