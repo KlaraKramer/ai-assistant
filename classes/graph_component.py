@@ -1,6 +1,7 @@
-####################################################################################
-### This class is responsible for the rendering of interactive graphs on the GUI ###
-####################################################################################
+######################################################
+### This class is responsible for the rendering of ###
+### interactive graphs on the GUI                  ###
+######################################################
 
 from dash import html, dcc
 

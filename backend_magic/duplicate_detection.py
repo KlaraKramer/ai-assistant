@@ -1,6 +1,7 @@
-#######################################################################################
-### This file contains functionality for the automated detection of duplicated rows ###
-#######################################################################################
+#######################################################################
+### This file contains functionality for the automated detection of ###
+### duplicated rows                                                 ###
+#######################################################################
 
 def detect_duplicates(df, keep='first'):
     # Reset previous detection steps

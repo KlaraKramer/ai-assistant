@@ -1,20 +1,24 @@
-###################################################################################################
-### This is the main executable app file of the Visual Data Wizard application                  ###
-###                                                                                             ###
-### It specifies the application’s layout, generates and displays buttons and dropdown          ###
-### menus for user interaction, and calls the individual data-cleaning functions where required ###
-### Sections:                                                                                   ###
-### 1. Imports                                                                                  ###
-### 2. Global variable and function definitions                                                 ###
-### 3. Definition of the dashboard's layout and UI components                                   ###
-### 4. Main application logic: Event-driven callback functions                                  ###
-### 5. Callback functions for styling                                                           ###
-### 6. Callback functions for triggering the downloads                                          ###
-### 7. Functionality for running the app                                                        ###
-###                                                                                             ###
-### The callback functions to handle event-driven UI updates form the largest part of this file ###
-### and the application's logic in general                                                      ###
-###################################################################################################
+#############################################################################
+### This is the main executable app file of the Visual Data Wizard        ###
+### application                                                           ###
+###                                                                       ###
+### It specifies the application’s layout, generates and displays buttons ### 
+### and dropdown                                                          ###
+### menus for user interaction, and calls the individual data-cleaning    ### 
+### functions where required                                              ###
+###                                                                       ###
+### Sections:                                                             ###
+### 1. Imports                                                            ###
+### 2. Global variable and function definitions                           ###
+### 3. Definition of the dashboard's layout and UI components             ###
+### 4. Main application logic: Event-driven callback functions            ###
+### 5. Callback functions for styling                                     ###
+### 6. Callback functions for triggering the downloads                    ###
+### 7. Functionality for running the app                                  ###
+###                                                                       ###
+### The callback functions to handle event-driven UI updates form the     ###
+### largest part of this file and the application's logic in general      ###
+#############################################################################
 
 
 ###############
@@ -303,9 +307,10 @@ app.layout = dbc.Container([
 ])
 
 
-#####################################################################################
-### Main application logic:                                                       ###
-### Event-driven callback functions that constitute the data engineering pipeline ###
+################################################################
+### Main application logic:                                  ###
+### Event-driven callback functions that constitute the data ###
+### engineering pipeline                                     ###
 
 # Callback to handle the file upload
 @app.callback(
@@ -1424,8 +1429,9 @@ def update_progress(contents, selected_dataset, click_start, click_miss, click_d
     )
 
 
-#################################################################################
-### Callback functions for the downloading of the cleaned data and action log ###
+######################################################################
+### Callback functions for the downloading of the cleaned data and ###
+### action log                                                     ###
 
 # Callback to download cleaned dataset into a csv file
 @app.callback(

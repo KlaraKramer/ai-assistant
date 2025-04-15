@@ -1,6 +1,7 @@
-################################################################################
-### This is the template for adding new stages to the data cleaning pipeline ###
-################################################################################
+##################################################
+### This is the template for adding new stages ###
+### to the data cleaning pipeline              ###
+##################################################
 
 
 # Callback to handle the first render within the 'NEW-STAGE' stage

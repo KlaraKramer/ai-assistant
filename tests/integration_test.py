@@ -44,8 +44,9 @@ def extract_text_from_dash_component(component):
     return ''
 
 
-#######################################################################################
-### Simulate user workflows through the process and test against expected behaviour ###
+############################################################
+### Simulate user workflows through the process and test ###
+### against expected behaviour                           ###
 
 @pytest.mark.filterwarnings('ignore::DeprecationWarning')
 @pytest.mark.filterwarnings('ignore::UserWarning')

@@ -1,6 +1,7 @@
-############################################################################################################################
-### This class generates and converts visualisations, including the parallel coordinates plots and Lux recommended plots ###
-############################################################################################################################
+#######################################################################
+### This class generates and converts visualisations, including the ###
+### parallel coordinates plots and Lux recommended plots            ###
+#######################################################################
 
 from plotly.tools import mpl_to_plotly
 from matplotlib.cm import Set1

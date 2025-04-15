@@ -1,6 +1,7 @@
-#################################################################################################
-### This file contains functions for the detection, imputation, and removal of missing values ###
-#################################################################################################
+#######################################################
+### This file contains functions for the detection, ###
+### imputation, and removal of missing values       ###
+#######################################################
 
 import pandas as pd
 import numpy as np

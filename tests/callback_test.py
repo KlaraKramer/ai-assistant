@@ -1,7 +1,8 @@
-################################################################################
-### This file tests the central callback functions for rendering components  ### 
-### on the GUI within all stages of the data engineering process             ###
-################################################################################
+####################################################################
+### This file tests the central callback functions for rendering ### 
+### components on the GUI within all stages of the data          ###
+### engineering process                                          ###
+####################################################################
 
 import pytest
 import pandas as pd
