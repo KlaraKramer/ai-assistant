@@ -10,6 +10,14 @@ Through a visual interface and a mixed-initiative workflow, the Visual Data Wiza
 
 By reducing cognitive load and improving task accuracy, the Visual Data Wizard makes data engineering more intuitive and inclusive, paving the way for better data and better decisions.
 
+---
+
+## ▶️ Running the Deployed Application
+
+The deployed Visual Data Wizard can be accessed at https://visual-data-wizard.onrender.com 
+
+---
+
 ## 🧩 Software Dependencies
 
 This project uses python=3.12.3.
