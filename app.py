@@ -2,7 +2,7 @@
 ### This is the main executable app file of the Visual Data Wizard        ###
 ### application                                                           ###
 ###                                                                       ###
-### It specifies the application’s layout, generates and displays buttons ### 
+### It specifies the application's layout, generates and displays buttons ### 
 ### and dropdown                                                          ###
 ### menus for user interaction, and calls the individual data-cleaning    ### 
 ### functions where required                                              ###
